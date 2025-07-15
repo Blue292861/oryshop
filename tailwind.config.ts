@@ -61,7 +61,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Medieval fantasy colors
+				gold: 'hsl(var(--gold))',
+				bronze: 'hsl(var(--bronze))',
+				copper: 'hsl(var(--copper))',
+				iron: 'hsl(var(--iron))',
+				wood: 'hsl(var(--wood))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
