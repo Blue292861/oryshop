@@ -23,6 +23,8 @@ interface ShopItem {
   content?: string;
   is_on_sale?: boolean;
   sale_price?: number;
+  tags?: string[];
+  is_temporary?: boolean;
 }
 
 interface AdminStats {
@@ -146,36 +148,55 @@ export default function Admin() {
     e.preventDefault();
     
     try {
-      const itemData = {
-        name: formData.name,
-        description: formData.description,
+      const finalData = {
+        ...formData,
         price: parseInt(formData.price),
-        image_url: formData.image_url,
-        category: formData.category,
-        seller: formData.seller,
-        content: formData.content,
-        is_on_sale: formData.is_on_sale,
-        sale_price: formData.is_on_sale && formData.sale_price ? parseInt(formData.sale_price) : null
+        sale_price: formData.is_on_sale && formData.sale_price ? parseInt(formData.sale_price) : null,
+        tags: formData.tags
       };
 
       if (editingItem) {
-        const { error } = await supabase
+        const { data: updatedData, error: updateError } = await supabase
           .from('shop_items')
-          .update(itemData)
-          .eq('id', editingItem.id);
+          .update({
+            name: finalData.name,
+            description: finalData.description,
+            price: finalData.price,
+            image_url: finalData.image_url,
+            category: finalData.category,
+            seller: finalData.seller,
+            content: finalData.content,
+            is_on_sale: finalData.is_on_sale,
+            sale_price: finalData.sale_price,
+            tags: finalData.tags,
+            is_temporary: finalData.is_temporary
+          })
+          .eq('id', editingItem.id)
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (updateError) throw updateError;
+
+        // Update the item in the state
+        setItems(prev => prev.map(item => 
+          item.id === editingItem.id ? updatedData : item
+        ));
 
         toast({
           title: "Article mis à jour",
           description: "L'article a été modifié avec succès",
         });
       } else {
-        const { error } = await supabase
+        const { data: newItem, error: insertError } = await supabase
           .from('shop_items')
-          .insert(itemData);
+          .insert([finalData])
+          .select()
+          .single();
 
-        if (error) throw error;
+        if (insertError) throw insertError;
+
+        // Add the new item to the state
+        setItems(prev => [newItem, ...prev]);
 
         toast({
           title: "Article créé",
@@ -185,8 +206,20 @@ export default function Admin() {
 
       setDialogOpen(false);
       setEditingItem(null);
-      resetForm();
-      fetchItems();
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        image_url: "",
+        category: "",
+        seller: "",
+        content: "",
+        is_on_sale: false,
+        sale_price: "",
+        tags: [],
+        is_temporary: false
+      });
+      setTagInput("");
       fetchStats();
     } catch (error: any) {
       toast({
@@ -208,12 +241,51 @@ export default function Admin() {
       seller: item.seller,
       content: item.content || "",
       is_on_sale: item.is_on_sale || false,
-      sale_price: item.sale_price ? item.sale_price.toString() : ""
+      sale_price: item.sale_price ? item.sale_price.toString() : "",
+      tags: item.tags || [],
+      is_temporary: item.is_temporary || false
     });
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => handleDeleteItem(id);
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      price: "",
+      image_url: "",
+      category: "",
+      seller: "",
+      content: "",
+      is_on_sale: false,
+      sale_price: "",
+      tags: [],
+      is_temporary: false
+    });
+    setTagInput("");
+    setEditingItem(null);
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const handleDeleteItem = async (id: string) => {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) return;
 
     try {
@@ -238,23 +310,6 @@ export default function Admin() {
         variant: "destructive",
       });
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      image_url: "",
-      category: "",
-      seller: "",
-      content: "",
-      is_on_sale: false,
-      sale_price: "",
-      tags: [],
-      is_temporary: false
-    });
-    setTagInput("");
   };
 
   const handleNewItem = () => {
@@ -338,42 +393,6 @@ export default function Admin() {
                   />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label htmlFor="is_on_sale">Article en solde</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Activer les prix soldés pour cet article
-                      </p>
-                    </div>
-                    <Switch
-                      id="is_on_sale"
-                      checked={formData.is_on_sale}
-                      onCheckedChange={(checked) => setFormData(prev => ({ 
-                        ...prev, 
-                        is_on_sale: checked,
-                        sale_price: checked ? prev.sale_price : ""
-                      }))}
-                    />
-                  </div>
-
-                  {formData.is_on_sale && (
-                    <div className="space-y-2">
-                      <Label htmlFor="sale_price">Prix soldé (€)</Label>
-                      <Input
-                        id="sale_price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={formData.sale_price}
-                        onChange={(e) => setFormData(prev => ({ ...prev, sale_price: e.target.value }))}
-                        placeholder="Prix réduit"
-                        required={formData.is_on_sale}
-                      />
-                    </div>
-                  )}
-                </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Catégorie</Label>
@@ -381,6 +400,7 @@ export default function Admin() {
                       id="category"
                       value={formData.category}
                       onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                      placeholder="ex: Livres"
                       required
                     />
                   </div>
@@ -390,6 +410,7 @@ export default function Admin() {
                       id="seller"
                       value={formData.seller}
                       onChange={(e) => setFormData(prev => ({ ...prev, seller: e.target.value }))}
+                      placeholder="ex: Artisan local"
                       required
                     />
                   </div>
@@ -414,6 +435,68 @@ export default function Admin() {
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                     rows={4}
                   />
+                </div>
+
+                {/* Tags Section */}
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Ajouter un tag"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    />
+                    <Button type="button" onClick={addTag} size="sm">
+                      Ajouter
+                    </Button>
+                  </div>
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
+                          {tag} ×
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sale Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_on_sale"
+                      checked={formData.is_on_sale}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_on_sale: checked, sale_price: checked ? formData.sale_price : "" })}
+                    />
+                    <Label htmlFor="is_on_sale">Article en solde</Label>
+                  </div>
+                  
+                  {formData.is_on_sale && (
+                    <div className="space-y-2">
+                      <Label htmlFor="sale_price">Prix soldé (€)</Label>
+                      <Input
+                        id="sale_price"
+                        type="number"
+                        value={formData.sale_price}
+                        onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
+                        placeholder="ex: 15"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Temporary Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_temporary"
+                      checked={formData.is_temporary}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_temporary: checked })}
+                    />
+                    <Label htmlFor="is_temporary">Article temporaire (seulement ce mois-ci)</Label>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full">
@@ -507,6 +590,23 @@ export default function Admin() {
                         <Badge variant="secondary">{item.category}</Badge>
                         {item.is_on_sale && (
                           <Badge variant="destructive" className="bg-red-600">Soldé</Badge>
+                        )}
+                        {item.is_temporary && (
+                          <Badge className="bg-orange-600 text-white">Temporaire</Badge>
+                        )}
+                        {item.tags && item.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {item.tags.slice(0, 2).map((tag, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {tag}
+                              </Badge>
+                            ))}
+                            {item.tags.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{item.tags.length - 2}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                         <span className="text-sm text-muted-foreground">par {item.seller}</span>
                       </div>

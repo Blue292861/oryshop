@@ -516,10 +516,12 @@ export type Database = {
           id: string
           image_url: string
           is_on_sale: boolean
+          is_temporary: boolean | null
           name: string
           price: number
           sale_price: number | null
           seller: string
+          tags: string[] | null
           updated_at: string
         }
         Insert: {
@@ -530,10 +532,12 @@ export type Database = {
           id?: string
           image_url: string
           is_on_sale?: boolean
+          is_temporary?: boolean | null
           name: string
           price: number
           sale_price?: number | null
           seller: string
+          tags?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -544,10 +548,12 @@ export type Database = {
           id?: string
           image_url?: string
           is_on_sale?: boolean
+          is_temporary?: boolean | null
           name?: string
           price?: number
           sale_price?: number | null
           seller?: string
+          tags?: string[] | null
           updated_at?: string
         }
         Relationships: []

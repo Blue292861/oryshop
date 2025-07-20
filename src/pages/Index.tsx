@@ -27,7 +27,7 @@ interface ShopItem {
 export default function Index() {
   const [temporaryItems, setTemporaryItems] = useState<ShopItem[]>([]);
   const [showTemporary, setShowTemporary] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
