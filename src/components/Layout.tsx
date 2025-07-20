@@ -1,10 +1,12 @@
-import { Crown, ShoppingBag, User, Settings, LogOut } from "lucide-react";
+import { Crown, ShoppingBag, User, Settings, LogOut, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,6 +16,8 @@ export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { getTotalItems } = useCart();
+  const totalItems = getTotalItems();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -104,6 +108,21 @@ export const Layout = ({ children }: LayoutProps) => {
               >
                 <ShoppingBag className="h-4 w-4" />
                 <span className="hidden sm:inline">Boutique</span>
+              </Button>
+
+              <Button
+                variant={isActivePage('/cart') ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/cart')}
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-3 relative"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span className="hidden sm:inline">Panier</span>
+                {totalItems > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 h-5 w-5 flex items-center justify-center">
+                    {totalItems}
+                  </Badge>
+                )}
               </Button>
 
               <Button

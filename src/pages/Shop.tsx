@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
+import { useCart } from "@/contexts/CartContext";
+import ProductModal from "@/components/ProductModal";
 
 interface ShopItem {
   id: string;
@@ -31,6 +33,9 @@ export default function Shop() {
   const [selectedTag, setSelectedTag] = useState("all");
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
+  const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addToCart } = useCart();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,60 +98,17 @@ export default function Shop() {
     setFilteredItems(filtered);
   };
 
-  const handlePurchase = async (item: ShopItem) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Erreur",
-          description: "Vous devez être connecté pour acheter",
-          variant: "destructive",
-        });
-        return;
-      }
+  const handleAddToCart = (item: ShopItem) => {
+    addToCart(item);
+    toast({
+      title: "Article ajouté !",
+      description: `${item.name} a été ajouté à votre panier`,
+    });
+  };
 
-      // Calculate Tensens points: 5% of final price * 166
-      const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-      const tensensEarned = Math.floor((finalPrice * 0.05) * 166);
-
-      // Create order
-      const { error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          item_id: item.id,
-          item_name: item.name,
-          price: finalPrice,
-          status: 'completed'
-        });
-
-      if (orderError) throw orderError;
-
-      // Add Tensens points transaction
-      const { error: pointsError } = await supabase
-        .from('point_transactions')
-        .insert({
-          user_id: user.id,
-          points: tensensEarned,
-          transaction_type: 'purchase_reward',
-          description: `Achat: ${item.name}`,
-          source_app: 'oryshop'
-        });
-
-      if (pointsError) throw pointsError;
-
-      toast({
-        title: "Achat réussi !",
-        description: `Vous avez gagné ${tensensEarned} points Tensens !`,
-      });
-
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de l'achat",
-        variant: "destructive",
-      });
-    }
+  const handleItemClick = (item: ShopItem) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
   };
 
   if (loading) {
@@ -250,9 +212,13 @@ export default function Shop() {
               <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
                 {tag}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {categoryItems.map((item) => (
-                  <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm">
+                  <Card 
+                    key={item.id} 
+                    className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
+                    onClick={() => handleItemClick(item)}
+                  >
                     <CardHeader className="p-0">
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
                         <img
@@ -274,72 +240,57 @@ export default function Shop() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4">
-                      <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                    <CardContent className="p-3">
+                      <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {item.name}
                       </CardTitle>
-                      <CardDescription className="text-sm mb-3 line-clamp-2">
-                        {item.description}
-                      </CardDescription>
-
-                      {/* Tags */}
-                      {item.tags && item.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {item.tags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                          {item.tags.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{item.tags.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      )}
                       
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex flex-col">
                           {item.is_on_sale && item.sale_price ? (
                             <>
-                              <span className="text-sm text-muted-foreground line-through opacity-60">
+                              <span className="text-xs text-muted-foreground line-through opacity-60">
                                 {item.price}€
                               </span>
-                              <span className="text-2xl font-bold text-red-600">
+                              <span className="text-lg font-bold text-red-600">
                                 {item.sale_price}€
                               </span>
                             </>
                           ) : (
-                            <span className="text-2xl font-bold text-primary">
+                            <span className="text-lg font-bold text-primary">
                               {item.price}€
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Coins className="h-4 w-4 mr-1" />
-                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Coins className="h-3 w-3 mr-1" />
+                          <span>+{Math.round(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.01)) * 166}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm text-muted-foreground">
-                          Par {item.seller}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-muted-foreground">
+                          {item.seller}
                         </span>
                         <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-muted-foreground" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-muted-foreground" />
                         </div>
                       </div>
 
                       <Button 
-                        onClick={() => handlePurchase(item)}
-                        className="w-full group-hover:bg-primary/90 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(item);
+                        }}
+                        size="sm"
+                        className="w-full text-xs"
                       >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Acheter
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Ajouter au panier
                       </Button>
                     </CardContent>
                   </Card>
@@ -359,9 +310,13 @@ export default function Shop() {
               <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
                 Sans catégorie
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {itemsWithoutTags.map((item) => (
-                  <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm">
+                  <Card 
+                    key={item.id} 
+                    className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
+                    onClick={() => handleItemClick(item)}
+                  >
                     <CardHeader className="p-0">
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
                         <img
@@ -383,56 +338,57 @@ export default function Shop() {
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-4">
-                      <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                    <CardContent className="p-3">
+                      <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
                         {item.name}
                       </CardTitle>
-                      <CardDescription className="text-sm mb-3 line-clamp-2">
-                        {item.description}
-                      </CardDescription>
                       
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex flex-col">
                           {item.is_on_sale && item.sale_price ? (
                             <>
-                              <span className="text-sm text-muted-foreground line-through opacity-60">
+                              <span className="text-xs text-muted-foreground line-through opacity-60">
                                 {item.price}€
                               </span>
-                              <span className="text-2xl font-bold text-red-600">
+                              <span className="text-lg font-bold text-red-600">
                                 {item.sale_price}€
                               </span>
                             </>
                           ) : (
-                            <span className="text-2xl font-bold text-primary">
+                            <span className="text-lg font-bold text-primary">
                               {item.price}€
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center text-sm text-muted-foreground">
-                          <Coins className="h-4 w-4 mr-1" />
-                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Coins className="h-3 w-3 mr-1" />
+                          <span>+{Math.round(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.01)) * 166}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm text-muted-foreground">
-                          Par {item.seller}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-muted-foreground">
+                          {item.seller}
                         </span>
                         <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <Star className="h-4 w-4 text-muted-foreground" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <Star className="h-3 w-3 text-muted-foreground" />
                         </div>
                       </div>
 
                       <Button 
-                        onClick={() => handlePurchase(item)}
-                        className="w-full group-hover:bg-primary/90 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(item);
+                        }}
+                        size="sm"
+                        className="w-full text-xs"
                       >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Acheter
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Ajouter au panier
                       </Button>
                     </CardContent>
                   </Card>
@@ -451,6 +407,12 @@ export default function Shop() {
             </p>
           </div>
         )}
+
+        <ProductModal 
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </div>
     </Layout>
   );
