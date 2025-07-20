@@ -393,27 +393,15 @@ export default function Admin() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Catégorie</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                      placeholder="ex: Livres"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="seller">Vendeur</Label>
-                    <Input
-                      id="seller"
-                      value={formData.seller}
-                      onChange={(e) => setFormData(prev => ({ ...prev, seller: e.target.value }))}
-                      placeholder="ex: Artisan local"
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seller">Vendeur</Label>
+                  <Input
+                    id="seller"
+                    value={formData.seller}
+                    onChange={(e) => setFormData(prev => ({ ...prev, seller: e.target.value }))}
+                    placeholder="ex: Artisan local"
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">

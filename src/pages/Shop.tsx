@@ -240,105 +240,207 @@ export default function Shop() {
           )}
         </div>
 
-        {/* Items Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm">
-              <CardHeader className="p-0">
-                <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <Badge className="absolute top-2 left-2 bg-secondary/80 backdrop-blur-sm">
-                    {item.category}
-                  </Badge>
-                  <div className="absolute top-2 right-2 flex flex-col gap-1">
-                    {item.is_on_sale && (
-                      <Badge className="bg-red-600 text-white">
-                        Soldé
-                      </Badge>
-                    )}
-                    {item.is_temporary && (
-                      <Badge className="bg-orange-600 text-white">
-                        Temporaire
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4">
-                <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
-                  {item.name}
-                </CardTitle>
-                <CardDescription className="text-sm mb-3 line-clamp-2">
-                  {item.description}
-                </CardDescription>
+        {/* Items Grid by Categories */}
+        {tags.map((tag) => {
+          const categoryItems = filteredItems.filter(item => item.tags && item.tags.includes(tag));
+          if (categoryItems.length === 0) return null;
+          
+          return (
+            <div key={tag} className="space-y-6">
+              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
+                {tag}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {categoryItems.map((item) => (
+                  <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm">
+                    <CardHeader className="p-0">
+                      <div className="aspect-square relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-1">
+                          {item.is_on_sale && (
+                            <Badge className="bg-red-600 text-white">
+                              Soldé
+                            </Badge>
+                          )}
+                          {item.is_temporary && (
+                            <Badge className="bg-orange-600 text-white">
+                              Temporaire
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                        {item.name}
+                      </CardTitle>
+                      <CardDescription className="text-sm mb-3 line-clamp-2">
+                        {item.description}
+                      </CardDescription>
 
-                {/* Tags */}
-                {item.tags && item.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {item.tags.slice(0, 3).map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {item.tags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{item.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex flex-col">
-                    {item.is_on_sale && item.sale_price ? (
-                      <>
-                        <span className="text-sm text-muted-foreground line-through opacity-60">
-                          {item.price}€
+                      {/* Tags */}
+                      {item.tags && item.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {item.tags.slice(0, 3).map((tag, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                          {item.tags.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{item.tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-col">
+                          {item.is_on_sale && item.sale_price ? (
+                            <>
+                              <span className="text-sm text-muted-foreground line-through opacity-60">
+                                {item.price}€
+                              </span>
+                              <span className="text-2xl font-bold text-red-600">
+                                {item.sale_price}€
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-primary">
+                              {item.price}€
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Coins className="h-4 w-4 mr-1" />
+                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm text-muted-foreground">
+                          Par {item.seller}
                         </span>
-                        <span className="text-2xl font-bold text-red-600">
-                          {item.sale_price}€
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={() => handlePurchase(item)}
+                        className="w-full group-hover:bg-primary/90 transition-colors"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Acheter
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Items without tags */}
+        {(() => {
+          const itemsWithoutTags = filteredItems.filter(item => !item.tags || item.tags.length === 0);
+          if (itemsWithoutTags.length === 0) return null;
+          
+          return (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
+                Sans catégorie
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {itemsWithoutTags.map((item) => (
+                  <Card key={item.id} className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm">
+                    <CardHeader className="p-0">
+                      <div className="aspect-square relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-1">
+                          {item.is_on_sale && (
+                            <Badge className="bg-red-600 text-white">
+                              Soldé
+                            </Badge>
+                          )}
+                          {item.is_temporary && (
+                            <Badge className="bg-orange-600 text-white">
+                              Temporaire
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                        {item.name}
+                      </CardTitle>
+                      <CardDescription className="text-sm mb-3 line-clamp-2">
+                        {item.description}
+                      </CardDescription>
+                      
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-col">
+                          {item.is_on_sale && item.sale_price ? (
+                            <>
+                              <span className="text-sm text-muted-foreground line-through opacity-60">
+                                {item.price}€
+                              </span>
+                              <span className="text-2xl font-bold text-red-600">
+                                {item.sale_price}€
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-2xl font-bold text-primary">
+                              {item.price}€
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Coins className="h-4 w-4 mr-1" />
+                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-sm text-muted-foreground">
+                          Par {item.seller}
                         </span>
-                      </>
-                    ) : (
-                      <span className="text-2xl font-bold text-primary">
-                        {item.price}€
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Coins className="h-4 w-4 mr-1" />
-                    <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
-                  </div>
-                </div>
+                        <div className="flex items-center">
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <Star className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      </div>
 
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-muted-foreground">
-                    Par {item.seller}
-                  </span>
-                  <div className="flex items-center">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <Star className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={() => handlePurchase(item)}
-                  className="w-full group-hover:bg-primary/90 transition-colors"
-                >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Acheter
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                      <Button 
+                        onClick={() => handlePurchase(item)}
+                        className="w-full group-hover:bg-primary/90 transition-colors"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        Acheter
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {filteredItems.length === 0 && (
           <div className="text-center py-20">
