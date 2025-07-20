@@ -49,8 +49,11 @@ export default function Admin() {
     seller: "",
     content: "",
     is_on_sale: false,
-    sale_price: ""
+    sale_price: "",
+    tags: [] as string[],
+    is_temporary: false
   });
+  const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -247,8 +250,11 @@ export default function Admin() {
       seller: "",
       content: "",
       is_on_sale: false,
-      sale_price: ""
+      sale_price: "",
+      tags: [],
+      is_temporary: false
     });
+    setTagInput("");
   };
 
   const handleNewItem = () => {

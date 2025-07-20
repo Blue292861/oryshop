@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, Star, Coins, Filter, Search } from "lucide-react";
+import { ShoppingCart, Star, Coins, Filter, Search, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,8 @@ interface ShopItem {
   seller: string;
   is_on_sale?: boolean;
   sale_price?: number;
+  tags?: string[];
+  is_temporary?: boolean;
 }
 
 export default function Shop() {
@@ -26,7 +28,9 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTag, setSelectedTag] = useState("all");
   const [categories, setCategories] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,7 +39,7 @@ export default function Shop() {
 
   useEffect(() => {
     filterItems();
-  }, [items, searchTerm, selectedCategory]);
+  }, [items, searchTerm, selectedCategory, selectedTag]);
 
   const fetchItems = async () => {
     try {
@@ -51,6 +55,11 @@ export default function Shop() {
       // Extract unique categories
       const uniqueCategories = [...new Set((data || []).map(item => item.category))];
       setCategories(uniqueCategories);
+      
+      // Extract unique tags
+      const allTags = (data || []).flatMap(item => item.tags || []);
+      const uniqueTags = [...new Set(allTags)];
+      setTags(uniqueTags);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -68,12 +77,17 @@ export default function Shop() {
     if (searchTerm) {
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
     if (selectedCategory !== "all") {
       filtered = filtered.filter(item => item.category === selectedCategory);
+    }
+
+    if (selectedTag !== "all") {
+      filtered = filtered.filter(item => item.tags && item.tags.includes(selectedTag));
     }
 
     setFilteredItems(filtered);
@@ -162,25 +176,29 @@ export default function Shop() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
-          <div className="relative flex-1 max-w-md mx-auto lg:mx-0">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher des articles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+            <div className="relative flex-1 max-w-md mx-auto lg:mx-0">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher des articles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
           
+          {/* Category Filters */}
           <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
             <Filter className="h-4 w-4 text-muted-foreground hidden sm:inline" />
+            <span className="text-sm text-muted-foreground hidden sm:inline">Catégories:</span>
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedCategory("all")}
             >
-              Tout
+              Toutes
             </Button>
             {categories.map((category) => (
               <Button
@@ -194,6 +212,32 @@ export default function Shop() {
               </Button>
             ))}
           </div>
+
+          {/* Tag Filters */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+              <Tag className="h-4 w-4 text-muted-foreground hidden sm:inline" />
+              <span className="text-sm text-muted-foreground hidden sm:inline">Tags:</span>
+              <Button
+                variant={selectedTag === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedTag("all")}
+              >
+                Tous
+              </Button>
+              {tags.map((tag) => (
+                <Button
+                  key={tag}
+                  variant={selectedTag === tag ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTag(tag)}
+                  className="text-xs sm:text-sm"
+                >
+                  {tag}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Items Grid */}
@@ -210,11 +254,18 @@ export default function Shop() {
                   <Badge className="absolute top-2 left-2 bg-secondary/80 backdrop-blur-sm">
                     {item.category}
                   </Badge>
-                  {item.is_on_sale && (
-                    <Badge className="absolute top-2 right-2 bg-red-600 text-white">
-                      Soldé
-                    </Badge>
-                  )}
+                  <div className="absolute top-2 right-2 flex flex-col gap-1">
+                    {item.is_on_sale && (
+                      <Badge className="bg-red-600 text-white">
+                        Soldé
+                      </Badge>
+                    )}
+                    {item.is_temporary && (
+                      <Badge className="bg-orange-600 text-white">
+                        Temporaire
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -224,6 +275,22 @@ export default function Shop() {
                 <CardDescription className="text-sm mb-3 line-clamp-2">
                   {item.description}
                 </CardDescription>
+
+                {/* Tags */}
+                {item.tags && item.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {item.tags.slice(0, 3).map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {item.tags.length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{item.tags.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex flex-col">
