@@ -61,9 +61,12 @@ export default function Shop() {
       const uniqueCategories = [...new Set((data || []).map(item => item.category))];
       setCategories(uniqueCategories);
       
-      // Extract unique tags
+      // Extract unique tags and ensure "seulement ce mois-ci" is always included
       const allTags = (data || []).flatMap(item => item.tags || []);
       const uniqueTags = [...new Set(allTags)];
+      if (!uniqueTags.includes("seulement ce mois-ci")) {
+        uniqueTags.unshift("seulement ce mois-ci");
+      }
       setTags(uniqueTags);
     } catch (error: any) {
       toast({
