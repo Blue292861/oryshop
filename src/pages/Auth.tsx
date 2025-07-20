@@ -94,7 +94,7 @@ export default function Auth() {
             Oryshop
           </h1>
           <p className="text-muted-foreground mt-2">
-            Votre boutique médiévale fantastique
+            Votre boutique de produits dérivés
           </p>
         </div>
 
