@@ -16,6 +16,8 @@ interface ShopItem {
   image_url: string;
   category: string;
   seller: string;
+  is_on_sale?: boolean;
+  sale_price?: number;
 }
 
 export default function Shop() {
@@ -89,8 +91,9 @@ export default function Shop() {
         return;
       }
 
-      // Calculate Tensens points: 5% of price * 166
-      const tensensEarned = Math.floor((item.price * 0.05) * 166);
+      // Calculate Tensens points: 5% of final price * 166
+      const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
+      const tensensEarned = Math.floor((finalPrice * 0.05) * 166);
 
       // Create order
       const { error: orderError } = await supabase
@@ -99,7 +102,7 @@ export default function Shop() {
           user_id: user.id,
           item_id: item.id,
           item_name: item.name,
-          price: item.price,
+          price: finalPrice,
           status: 'completed'
         });
 
@@ -207,6 +210,11 @@ export default function Shop() {
                   <Badge className="absolute top-2 left-2 bg-secondary/80 backdrop-blur-sm">
                     {item.category}
                   </Badge>
+                  {item.is_on_sale && (
+                    <Badge className="absolute top-2 right-2 bg-red-600 text-white">
+                      Soldé
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -218,12 +226,25 @@ export default function Shop() {
                 </CardDescription>
                 
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-2xl font-bold text-primary">
-                    {item.price}€
-                  </span>
+                  <div className="flex flex-col">
+                    {item.is_on_sale && item.sale_price ? (
+                      <>
+                        <span className="text-sm text-muted-foreground line-through opacity-60">
+                          {item.price}€
+                        </span>
+                        <span className="text-2xl font-bold text-red-600">
+                          {item.sale_price}€
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-primary">
+                        {item.price}€
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Coins className="h-4 w-4 mr-1" />
-                    <span>+{Math.floor((item.price * 0.05) * 166)} Tensens</span>
+                    <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)} Tensens</span>
                   </div>
                 </div>
 

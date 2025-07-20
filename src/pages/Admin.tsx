@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,8 @@ interface ShopItem {
   category: string;
   seller: string;
   content?: string;
+  is_on_sale?: boolean;
+  sale_price?: number;
 }
 
 interface AdminStats {
@@ -42,7 +45,9 @@ export default function Admin() {
     image_url: "",
     category: "",
     seller: "",
-    content: ""
+    content: "",
+    is_on_sale: false,
+    sale_price: ""
   });
   const { toast } = useToast();
 
@@ -123,7 +128,9 @@ export default function Admin() {
         image_url: formData.image_url,
         category: formData.category,
         seller: formData.seller,
-        content: formData.content
+        content: formData.content,
+        is_on_sale: formData.is_on_sale,
+        sale_price: formData.is_on_sale && formData.sale_price ? parseInt(formData.sale_price) : null
       };
 
       if (editingItem) {
@@ -174,7 +181,9 @@ export default function Admin() {
       image_url: item.image_url,
       category: item.category,
       seller: item.seller,
-      content: item.content || ""
+      content: item.content || "",
+      is_on_sale: item.is_on_sale || false,
+      sale_price: item.sale_price ? item.sale_price.toString() : ""
     });
     setDialogOpen(true);
   };
@@ -214,7 +223,9 @@ export default function Admin() {
       image_url: "",
       category: "",
       seller: "",
-      content: ""
+      content: "",
+      is_on_sale: false,
+      sale_price: ""
     });
   };
 
@@ -297,6 +308,42 @@ export default function Admin() {
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     required
                   />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label htmlFor="is_on_sale">Article en solde</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Activer les prix soldés pour cet article
+                      </p>
+                    </div>
+                    <Switch
+                      id="is_on_sale"
+                      checked={formData.is_on_sale}
+                      onCheckedChange={(checked) => setFormData(prev => ({ 
+                        ...prev, 
+                        is_on_sale: checked,
+                        sale_price: checked ? prev.sale_price : ""
+                      }))}
+                    />
+                  </div>
+
+                  {formData.is_on_sale && (
+                    <div className="space-y-2">
+                      <Label htmlFor="sale_price">Prix soldé (€)</Label>
+                      <Input
+                        id="sale_price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.sale_price}
+                        onChange={(e) => setFormData(prev => ({ ...prev, sale_price: e.target.value }))}
+                        placeholder="Prix réduit"
+                        required={formData.is_on_sale}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -417,12 +464,24 @@ export default function Admin() {
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge variant="secondary">{item.category}</Badge>
+                        {item.is_on_sale && (
+                          <Badge variant="destructive" className="bg-red-600">Soldé</Badge>
+                        )}
                         <span className="text-sm text-muted-foreground">par {item.seller}</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
-                    <span className="text-lg font-bold text-primary">{item.price}€</span>
+                    <div className="text-right">
+                      {item.is_on_sale && item.sale_price ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-sm text-muted-foreground line-through">{item.price}€</span>
+                          <span className="text-lg font-bold text-red-600">{item.sale_price}€</span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-bold text-primary">{item.price}€</span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
