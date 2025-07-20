@@ -87,7 +87,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <Crown className="h-16 w-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -143,7 +143,7 @@ export default function Auth() {
 
               {isSignUp && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">Prénom</Label>
                       <Input
@@ -195,7 +195,7 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city">Ville</Label>
                       <div className="relative">
@@ -218,7 +218,7 @@ export default function Auth() {
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                       />
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                       <Label htmlFor="country">Pays</Label>
                       <Input
                         id="country"

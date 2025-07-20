@@ -159,8 +159,8 @@ export default function Shop() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative flex-1 max-w-md">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+          <div className="relative flex-1 max-w-md mx-auto lg:mx-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Rechercher des articles..."
@@ -170,8 +170,8 @@ export default function Shop() {
             />
           </div>
           
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground hidden sm:inline" />
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
               size="sm"
@@ -185,6 +185,7 @@ export default function Shop() {
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
+                className="text-xs sm:text-sm"
               >
                 {category}
               </Button>

@@ -241,12 +241,12 @@ export default function Admin() {
     <Layout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Administration Oryshop
             </h1>
-            <p className="text-muted-foreground text-lg mt-2">
+            <p className="text-muted-foreground text-base md:text-lg mt-2">
               Gérez les articles et suivez les statistiques
             </p>
           </div>
@@ -258,14 +258,14 @@ export default function Admin() {
                 Nouvel article
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
               <DialogHeader>
                 <DialogTitle>
                   {editingItem ? "Modifier l'article" : "Créer un nouvel article"}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom de l'article</Label>
                     <Input
@@ -299,7 +299,7 @@ export default function Admin() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="category">Catégorie</Label>
                     <Input
@@ -403,41 +403,43 @@ export default function Admin() {
           <CardContent>
             <div className="grid gap-4">
               {items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/20">
-                  <div className="flex items-center space-x-4">
+                <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center space-x-4 flex-1 min-w-0">
                     <img
                       src={item.image_url}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg"
+                      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     />
-                    <div>
-                      <h4 className="font-semibold">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-1">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-semibold truncate">{item.name}</h4>
+                      <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
                         {item.description}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <Badge variant="secondary">{item.category}</Badge>
                         <span className="text-sm text-muted-foreground">par {item.seller}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
                     <span className="text-lg font-bold text-primary">{item.price}€</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(item.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(item.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

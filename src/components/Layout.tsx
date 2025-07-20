@@ -87,33 +87,33 @@ export const Layout = ({ children }: LayoutProps) => {
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Crown className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <div className="flex items-center space-x-2 md:space-x-4">
+            <Crown className="h-6 w-6 md:h-8 md:w-8 text-primary" />
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Oryshop
             </h1>
           </div>
 
           {user && (
-            <nav className="flex items-center space-x-2">
+            <nav className="flex items-center gap-1 md:gap-2">
               <Button
                 variant={isActivePage('/') ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/')}
-                className="flex items-center space-x-2"
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
               >
                 <ShoppingBag className="h-4 w-4" />
-                <span>Boutique</span>
+                <span className="hidden sm:inline">Boutique</span>
               </Button>
 
               <Button
                 variant={isActivePage('/profile') ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/profile')}
-                className="flex items-center space-x-2"
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
               >
                 <User className="h-4 w-4" />
-                <span>Profil</span>
+                <span className="hidden sm:inline">Profil</span>
               </Button>
 
               {isAdmin && (
@@ -121,10 +121,10 @@ export const Layout = ({ children }: LayoutProps) => {
                   variant={isActivePage('/admin') ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => navigate('/admin')}
-                  className="flex items-center space-x-2"
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
                 >
                   <Settings className="h-4 w-4" />
-                  <span>Admin</span>
+                  <span className="hidden sm:inline">Admin</span>
                 </Button>
               )}
 
@@ -132,10 +132,10 @@ export const Layout = ({ children }: LayoutProps) => {
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center space-x-2 text-destructive hover:text-destructive"
+                className="flex items-center gap-1 md:gap-2 px-2 md:px-3 text-destructive hover:text-destructive"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Déconnexion</span>
+                <span className="hidden md:inline">Déconnexion</span>
               </Button>
             </nav>
           )}
