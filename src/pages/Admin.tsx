@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,8 @@ interface AdminStats {
 
 export default function Admin() {
   const [items, setItems] = useState<ShopItem[]>([]);
+  const [filteredItems, setFilteredItems] = useState<ShopItem[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<AdminStats>({ totalItems: 0, totalRevenue: 0, totalUsers: 0, recentOrders: 0 });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,6 +58,25 @@ export default function Admin() {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    filterItems();
+  }, [items, searchTerm]);
+
+  const filterItems = () => {
+    if (!searchTerm.trim()) {
+      setFilteredItems(items);
+      return;
+    }
+
+    const filtered = items.filter(item =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.seller.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredItems(filtered);
+  };
+
   const fetchItems = async () => {
     try {
       const { data, error } = await supabase
@@ -66,6 +87,7 @@ export default function Admin() {
       if (error) throw error;
 
       setItems(data || []);
+      setFilteredItems(data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -442,14 +464,27 @@ export default function Admin() {
         {/* Items List */}
         <Card className="border-border bg-card/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>Articles de la boutique</CardTitle>
-            <CardDescription>
-              Gérez tous les articles disponibles dans Oryshop
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle>Articles de la boutique</CardTitle>
+                <CardDescription>
+                  Gérez tous les articles disponibles dans Oryshop
+                </CardDescription>
+              </div>
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher un article..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-border rounded-lg bg-muted/20">
                   <div className="flex items-center space-x-4 flex-1 min-w-0">
                     <img
@@ -503,6 +538,16 @@ export default function Admin() {
                 </div>
               ))}
             </div>
+
+            {filteredItems.length === 0 && items.length > 0 && (
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucun article trouvé</h3>
+                <p className="text-muted-foreground">
+                  Aucun article ne correspond à votre recherche "{searchTerm}"
+                </p>
+              </div>
+            )}
 
             {items.length === 0 && (
               <div className="text-center py-20">
