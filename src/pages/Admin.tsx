@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet } from "lucide-react";
+import * as XLSX from 'xlsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ interface ShopItem {
   sale_price?: number;
   tags?: string[];
   is_temporary?: boolean;
+  product_id?: string;
 }
 
 interface AdminStats {
@@ -53,7 +55,8 @@ export default function Admin() {
     is_on_sale: false,
     sale_price: "",
     tags: [] as string[],
-    is_temporary: false
+    is_temporary: false,
+    product_id: ""
   });
   const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
@@ -169,7 +172,8 @@ export default function Admin() {
             is_on_sale: finalData.is_on_sale,
             sale_price: finalData.sale_price,
             tags: finalData.tags,
-            is_temporary: finalData.is_temporary
+            is_temporary: finalData.is_temporary,
+            product_id: finalData.product_id
           })
           .eq('id', editingItem.id)
           .select()
@@ -217,7 +221,8 @@ export default function Admin() {
         is_on_sale: false,
         sale_price: "",
         tags: [],
-        is_temporary: false
+        is_temporary: false,
+        product_id: ""
       });
       setTagInput("");
       fetchStats();
@@ -243,7 +248,8 @@ export default function Admin() {
       is_on_sale: item.is_on_sale || false,
       sale_price: item.sale_price ? item.sale_price.toString() : "",
       tags: item.tags || [],
-      is_temporary: item.is_temporary || false
+      is_temporary: item.is_temporary || false,
+      product_id: item.product_id || ""
     });
     setDialogOpen(true);
   };
@@ -262,10 +268,69 @@ export default function Admin() {
       is_on_sale: false,
       sale_price: "",
       tags: [],
-      is_temporary: false
+      is_temporary: false,
+      product_id: ""
     });
     setTagInput("");
     setEditingItem(null);
+  };
+
+  const exportMonthlySales = async () => {
+    try {
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      // Get orders from this month with item details
+      const { data: ordersData, error: ordersError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'completed')
+        .gte('created_at', firstDayOfMonth.toISOString())
+        .lte('created_at', now.toISOString());
+
+      if (ordersError) throw ordersError;
+
+      // Get all shop items to match with orders
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('shop_items')
+        .select('*');
+
+      if (itemsError) throw itemsError;
+
+      const workbook = XLSX.utils.book_new();
+      
+      const salesDataForExport = ordersData?.map(order => {
+        const item = itemsData?.find(i => i.id === order.item_id);
+        return {
+          'Date de vente': new Date(order.created_at).toLocaleDateString('fr-FR'),
+          'Nom du produit': order.item_name,
+          'Identifiant produit': item?.product_id || 'Non défini',
+          'Catégorie': item?.category || 'Non défini',
+          'Tags': item?.tags ? item.tags.join(', ') : '',
+          'Prix de vente': order.price,
+          'ID Commande': order.id
+        };
+      }) || [];
+
+      const worksheet = XLSX.utils.json_to_sheet(salesDataForExport);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventes du mois');
+
+      const monthName = now.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' });
+      const fileName = `ventes_${monthName.replace(' ', '_')}.xlsx`;
+      
+      XLSX.writeFile(workbook, fileName);
+
+      toast({
+        title: "Export réussi",
+        description: `Les ventes du mois ont été exportées vers ${fileName}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur d'export",
+        description: error.message || "Erreur lors de l'export des ventes",
+        variant: "destructive",
+      });
+    }
   };
 
   const addTag = () => {
@@ -345,19 +410,29 @@ export default function Admin() {
             </p>
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleNewItem} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Nouvel article
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingItem ? "Modifier l'article" : "Créer un nouvel article"}
-                </DialogTitle>
-              </DialogHeader>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={exportMonthlySales}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Export ventes du mois
+            </Button>
+            
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleNewItem} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Nouvel article
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingItem ? "Modifier l'article" : "Créer un nouvel article"}
+                  </DialogTitle>
+                </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -401,6 +476,16 @@ export default function Admin() {
                     onChange={(e) => setFormData(prev => ({ ...prev, seller: e.target.value }))}
                     placeholder="ex: Artisan local"
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="product_id">Identifiant produit</Label>
+                  <Input
+                    id="product_id"
+                    value={formData.product_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, product_id: e.target.value }))}
+                    placeholder="ex: PROD-001"
                   />
                 </div>
 
@@ -492,7 +577,8 @@ export default function Admin() {
                 </Button>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         {/* Stats Cards */}

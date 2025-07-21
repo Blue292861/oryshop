@@ -200,6 +200,7 @@ export type Database = {
           is_paco_favourite: boolean
           is_premium: boolean
           points: number
+          summary: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -216,6 +217,7 @@ export type Database = {
           is_paco_favourite?: boolean
           is_premium?: boolean
           points?: number
+          summary?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -232,6 +234,7 @@ export type Database = {
           is_paco_favourite?: boolean
           is_premium?: boolean
           points?: number
+          summary?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
@@ -519,6 +522,7 @@ export type Database = {
           is_temporary: boolean | null
           name: string
           price: number
+          product_id: string | null
           sale_price: number | null
           seller: string
           tags: string[] | null
@@ -535,6 +539,7 @@ export type Database = {
           is_temporary?: boolean | null
           name: string
           price: number
+          product_id?: string | null
           sale_price?: number | null
           seller: string
           tags?: string[] | null
@@ -551,6 +556,7 @@ export type Database = {
           is_temporary?: boolean | null
           name?: string
           price?: number
+          product_id?: string | null
           sale_price?: number | null
           seller?: string
           tags?: string[] | null
