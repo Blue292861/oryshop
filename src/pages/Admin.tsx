@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet } from "lucide-react";
-import * as XLSX from 'xlsx';
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -275,63 +276,6 @@ export default function Admin() {
     setEditingItem(null);
   };
 
-  const exportMonthlySales = async () => {
-    try {
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
-      // Get orders from this month with item details
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('status', 'completed')
-        .gte('created_at', firstDayOfMonth.toISOString())
-        .lte('created_at', now.toISOString());
-
-      if (ordersError) throw ordersError;
-
-      // Get all shop items to match with orders
-      const { data: itemsData, error: itemsError } = await supabase
-        .from('shop_items')
-        .select('*');
-
-      if (itemsError) throw itemsError;
-
-      const workbook = XLSX.utils.book_new();
-      
-      const salesDataForExport = ordersData?.map(order => {
-        const item = itemsData?.find(i => i.id === order.item_id);
-        return {
-          'Date de vente': new Date(order.created_at).toLocaleDateString('fr-FR'),
-          'Nom du produit': order.item_name,
-          'Identifiant produit': item?.product_id || 'Non défini',
-          'Catégorie': item?.category || 'Non défini',
-          'Tags': item?.tags ? item.tags.join(', ') : '',
-          'Prix de vente': order.price,
-          'ID Commande': order.id
-        };
-      }) || [];
-
-      const worksheet = XLSX.utils.json_to_sheet(salesDataForExport);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Ventes du mois');
-
-      const monthName = now.toLocaleDateString('fr-FR', { year: 'numeric', month: 'long' });
-      const fileName = `ventes_${monthName.replace(' ', '_')}.xlsx`;
-      
-      XLSX.writeFile(workbook, fileName);
-
-      toast({
-        title: "Export réussi",
-        description: `Les ventes du mois ont été exportées vers ${fileName}`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur d'export",
-        description: error.message || "Erreur lors de l'export des ventes",
-        variant: "destructive",
-      });
-    }
-  };
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -412,12 +356,12 @@ export default function Admin() {
           
           <div className="flex items-center gap-2">
             <Button
-              onClick={exportMonthlySales}
+              onClick={() => navigate('/admin/sales-export')}
               variant="outline"
               className="flex items-center gap-2"
             >
               <FileSpreadsheet className="h-4 w-4" />
-              Export ventes du mois
+              Export des ventes
             </Button>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

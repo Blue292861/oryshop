@@ -12,6 +12,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Admin = lazy(() => import("./pages/Admin"));
+const SalesExport = lazy(() => import("./pages/SalesExport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/shop" element={<Shop />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/sales-export" element={<SalesExport />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
