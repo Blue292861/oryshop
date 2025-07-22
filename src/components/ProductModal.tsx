@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ShoppingCart, Star, Coins, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,8 @@ interface ShopItem {
   sale_price?: number;
   tags?: string[];
   is_temporary?: boolean;
+  is_clothing?: boolean;
+  available_sizes?: string[];
 }
 
 interface ProductModalProps {
@@ -28,14 +31,24 @@ interface ProductModalProps {
 export default function ProductModal({ item, isOpen, onClose }: ProductModalProps) {
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   if (!item) return null;
 
   const handleAddToCart = () => {
-    addToCart(item);
+    if (item.is_clothing && (!selectedSize || !item.available_sizes?.includes(selectedSize))) {
+      toast({
+        title: "Taille requise",
+        description: "Veuillez sélectionner une taille disponible",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addToCart({ ...item, selectedSize });
     toast({
       title: "Article ajouté !",
-      description: `${item.name} a été ajouté à votre panier`,
+      description: `${item.name} a été ajouté à votre panier${selectedSize ? ` (taille ${selectedSize})` : ''}`,
     });
     onClose();
   };
@@ -127,6 +140,28 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
                 Vendu par <span className="font-medium">{item.seller}</span>
               </span>
             </div>
+
+            {/* Size Selection for Clothing */}
+            {item.is_clothing && item.available_sizes && item.available_sizes.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold">Taille</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {item.available_sizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`p-2 border rounded-md text-center font-medium transition-colors ${
+                        selectedSize === size
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:border-primary'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Rating */}
             <div className="flex items-center gap-2">

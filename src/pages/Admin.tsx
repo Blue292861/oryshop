@@ -27,6 +27,8 @@ interface ShopItem {
   tags?: string[];
   is_temporary?: boolean;
   product_id?: string;
+  is_clothing?: boolean;
+  available_sizes?: string[];
 }
 
 interface AdminStats {
@@ -57,7 +59,9 @@ export default function Admin() {
     sale_price: "",
     tags: [] as string[],
     is_temporary: false,
-    product_id: ""
+    product_id: "",
+    is_clothing: false,
+    available_sizes: [] as string[]
   });
   const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
@@ -174,7 +178,9 @@ export default function Admin() {
             sale_price: finalData.sale_price,
             tags: finalData.tags,
             is_temporary: finalData.is_temporary,
-            product_id: finalData.product_id
+            product_id: finalData.product_id,
+            is_clothing: finalData.is_clothing,
+            available_sizes: finalData.available_sizes
           })
           .eq('id', editingItem.id)
           .select()
@@ -223,7 +229,9 @@ export default function Admin() {
         sale_price: "",
         tags: [],
         is_temporary: false,
-        product_id: ""
+        product_id: "",
+        is_clothing: false,
+        available_sizes: []
       });
       setTagInput("");
       fetchStats();
@@ -250,7 +258,9 @@ export default function Admin() {
       sale_price: item.sale_price ? item.sale_price.toString() : "",
       tags: item.tags || [],
       is_temporary: item.is_temporary || false,
-      product_id: item.product_id || ""
+      product_id: item.product_id || "",
+      is_clothing: item.is_clothing || false,
+      available_sizes: item.available_sizes || []
     });
     setDialogOpen(true);
   };
@@ -270,7 +280,9 @@ export default function Admin() {
       sale_price: "",
       tags: [],
       is_temporary: false,
-      product_id: ""
+      product_id: "",
+      is_clothing: false,
+      available_sizes: []
     });
     setTagInput("");
     setEditingItem(null);
@@ -514,6 +526,52 @@ export default function Admin() {
                     />
                     <Label htmlFor="is_temporary">Article temporaire (seulement ce mois-ci)</Label>
                   </div>
+                </div>
+
+                {/* Clothing Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is_clothing"
+                      checked={formData.is_clothing}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_clothing: checked, available_sizes: checked ? formData.available_sizes : [] })}
+                    />
+                    <Label htmlFor="is_clothing">Vêtements inclus</Label>
+                  </div>
+                  
+                  {formData.is_clothing && (
+                    <div className="space-y-2">
+                      <Label>Tailles disponibles</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
+                          <div key={size} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`size-${size}`}
+                              checked={formData.available_sizes.includes(size)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    available_sizes: [...prev.available_sizes, size]
+                                  }));
+                                } else {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    available_sizes: prev.available_sizes.filter(s => s !== size)
+                                  }));
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={`size-${size}`} className="text-sm">
+                              {size}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <Button type="submit" className="w-full">

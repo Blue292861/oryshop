@@ -512,12 +512,14 @@ export type Database = {
       }
       shop_items: {
         Row: {
+          available_sizes: string[] | null
           category: string
           content: string | null
           created_at: string
           description: string
           id: string
           image_url: string
+          is_clothing: boolean
           is_on_sale: boolean
           is_temporary: boolean | null
           name: string
@@ -529,12 +531,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_sizes?: string[] | null
           category: string
           content?: string | null
           created_at?: string
           description: string
           id?: string
           image_url: string
+          is_clothing?: boolean
           is_on_sale?: boolean
           is_temporary?: boolean | null
           name: string
@@ -546,12 +550,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_sizes?: string[] | null
           category?: string
           content?: string | null
           created_at?: string
           description?: string
           id?: string
           image_url?: string
+          is_clothing?: boolean
           is_on_sale?: boolean
           is_temporary?: boolean | null
           name?: string

@@ -119,9 +119,10 @@ export default function Cart() {
             {items.map((item) => {
               const price = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
               const tensensPerItem = Math.round(price * 0.01) * 166;
+              const itemKey = `${item.id}-${item.selectedSize || 'no-size'}`;
               
               return (
-                <Card key={item.id} className="overflow-hidden">
+                <Card key={itemKey} className="overflow-hidden">
                   <CardContent className="p-6">
                     <div className="flex gap-4">
                       <div className="w-24 h-24 relative overflow-hidden rounded-lg">
@@ -139,6 +140,9 @@ export default function Cart() {
                       
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
+                        {item.selectedSize && (
+                          <p className="text-sm font-medium text-primary mb-1">Taille: {item.selectedSize}</p>
+                        )}
                         <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                         <div className="flex flex-wrap gap-1 mb-2">
                           {item.tags?.slice(0, 2).map((tag, index) => (
@@ -176,7 +180,7 @@ export default function Cart() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedSize)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
@@ -184,14 +188,14 @@ export default function Cart() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedSize)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(item.id, item.selectedSize)}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
