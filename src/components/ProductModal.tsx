@@ -20,6 +20,7 @@ interface ShopItem {
   is_temporary?: boolean;
   is_clothing?: boolean;
   available_sizes?: string[];
+  additional_images?: string[];
 }
 
 interface ProductModalProps {
@@ -32,8 +33,12 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
   const { addToCart } = useCart();
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   if (!item) return null;
+
+  // Create array of all images (cover + additional)
+  const allImages = [item.image_url, ...(item.additional_images || [])];
 
   const handleAddToCart = () => {
     if (item.is_clothing && (!selectedSize || !item.available_sizes?.includes(selectedSize))) {
@@ -64,25 +69,49 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Image */}
-          <div className="relative aspect-square overflow-hidden rounded-lg">
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-4 right-4 flex flex-col gap-2">
-              {item.is_on_sale && (
-                <Badge className="bg-red-600 text-white">
-                  Soldé
-                </Badge>
-              )}
-              {item.is_temporary && (
-                <Badge className="bg-orange-600 text-white">
-                  Temporaire
-                </Badge>
-              )}
+          {/* Images */}
+          <div className="space-y-4">
+            {/* Main Image */}
+            <div className="relative aspect-square overflow-hidden rounded-lg">
+              <img
+                src={allImages[currentImageIndex]}
+                alt={item.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-4 right-4 flex flex-col gap-2">
+                {item.is_on_sale && (
+                  <Badge className="bg-red-600 text-white">
+                    Soldé
+                  </Badge>
+                )}
+                {item.is_temporary && (
+                  <Badge className="bg-orange-600 text-white">
+                    Temporaire
+                  </Badge>
+                )}
+              </div>
             </div>
+
+            {/* Image Thumbnails */}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {allImages.map((imageUrl, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                      currentImageIndex === index ? 'border-primary' : 'border-border'
+                    }`}
+                  >
+                    <img
+                      src={imageUrl}
+                      alt={`Image ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Details */}

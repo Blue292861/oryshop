@@ -12,6 +12,7 @@ export interface CartItem {
   tags?: string[];
   quantity: number;
   selectedSize?: string;
+  additional_images?: string[];
 }
 
 interface CartContextType {

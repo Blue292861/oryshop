@@ -29,6 +29,7 @@ interface ShopItem {
   product_id?: string;
   is_clothing?: boolean;
   available_sizes?: string[];
+  additional_images?: string[];
 }
 
 interface AdminStats {
@@ -61,8 +62,12 @@ export default function Admin() {
     is_temporary: false,
     product_id: "",
     is_clothing: false,
-    available_sizes: [] as string[]
+    available_sizes: [] as string[],
+    additional_images: [] as string[]
   });
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const { toast } = useToast();
 
@@ -152,12 +157,52 @@ export default function Admin() {
     }
   };
 
+  const uploadImage = async (file: File, path: string): Promise<string> => {
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      setUploadingImages(true);
+      let finalImageUrl = formData.image_url;
+      let finalAdditionalImages = formData.additional_images;
+
+      // Upload cover image if a new file is selected
+      if (coverImageFile) {
+        const coverPath = `covers/${Date.now()}-${coverImageFile.name}`;
+        finalImageUrl = await uploadImage(coverImageFile, coverPath);
+      }
+
+      // Upload additional images if any
+      if (additionalImageFiles.length > 0) {
+        const uploadPromises = additionalImageFiles.map(async (file) => {
+          const imagePath = `additional/${Date.now()}-${file.name}`;
+          return uploadImage(file, imagePath);
+        });
+        
+        const uploadedUrls = await Promise.all(uploadPromises);
+        finalAdditionalImages = [...formData.additional_images, ...uploadedUrls];
+      }
+
       const finalData = {
         ...formData,
+        image_url: finalImageUrl,
+        additional_images: finalAdditionalImages,
         price: parseInt(formData.price),
         sale_price: formData.is_on_sale && formData.sale_price ? parseInt(formData.sale_price) : null,
         tags: formData.tags
@@ -180,7 +225,8 @@ export default function Admin() {
             is_temporary: finalData.is_temporary,
             product_id: finalData.product_id,
             is_clothing: finalData.is_clothing,
-            available_sizes: finalData.available_sizes
+            available_sizes: finalData.available_sizes,
+            additional_images: finalData.additional_images
           })
           .eq('id', editingItem.id)
           .select()
@@ -231,8 +277,11 @@ export default function Admin() {
         is_temporary: false,
         product_id: "",
         is_clothing: false,
-        available_sizes: []
+        available_sizes: [],
+        additional_images: []
       });
+      setCoverImageFile(null);
+      setAdditionalImageFiles([]);
       setTagInput("");
       fetchStats();
     } catch (error: any) {
@@ -241,6 +290,8 @@ export default function Admin() {
         description: error.message || "Erreur lors de la sauvegarde",
         variant: "destructive",
       });
+    } finally {
+      setUploadingImages(false);
     }
   };
 
@@ -260,7 +311,8 @@ export default function Admin() {
       is_temporary: item.is_temporary || false,
       product_id: item.product_id || "",
       is_clothing: item.is_clothing || false,
-      available_sizes: item.available_sizes || []
+      available_sizes: item.available_sizes || [],
+      additional_images: item.additional_images || []
     });
     setDialogOpen(true);
   };
@@ -282,8 +334,11 @@ export default function Admin() {
       is_temporary: false,
       product_id: "",
       is_clothing: false,
-      available_sizes: []
+      available_sizes: [],
+      additional_images: []
     });
+    setCoverImageFile(null);
+    setAdditionalImageFiles([]);
     setTagInput("");
     setEditingItem(null);
   };
@@ -445,15 +500,100 @@ export default function Admin() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">URL de l'image</Label>
-                  <Input
-                    id="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
-                    required
-                  />
+                {/* Image Upload Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <Label>Images du produit</Label>
+                  
+                  {/* Cover Image */}
+                  <div className="space-y-2">
+                    <Label htmlFor="cover_image">Image de couverture</Label>
+                    <Input
+                      id="cover_image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setCoverImageFile(file);
+                      }}
+                      className="cursor-pointer"
+                    />
+                    {(coverImageFile || formData.image_url) && (
+                      <div className="mt-2">
+                        <img
+                          src={coverImageFile ? URL.createObjectURL(coverImageFile) : formData.image_url}
+                          alt="Aperçu"
+                          className="w-24 h-24 object-cover rounded-lg border"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Additional Images */}
+                  <div className="space-y-2">
+                    <Label htmlFor="additional_images">Images supplémentaires</Label>
+                    <Input
+                      id="additional_images"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        setAdditionalImageFiles(prev => [...prev, ...files]);
+                      }}
+                      className="cursor-pointer"
+                    />
+                    
+                    {/* Preview existing additional images */}
+                    {formData.additional_images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {formData.additional_images.map((url, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={url}
+                              alt={`Image ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  additional_images: prev.additional_images.filter((_, i) => i !== index)
+                                }));
+                              }}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Preview new additional images */}
+                    {additionalImageFiles.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {additionalImageFiles.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Nouvelle image ${index + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdditionalImageFiles(prev => prev.filter((_, i) => i !== index));
+                              }}
+                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -574,8 +714,8 @@ export default function Admin() {
                   )}
                 </div>
 
-                <Button type="submit" className="w-full">
-                  {editingItem ? "Mettre à jour" : "Créer l'article"}
+                <Button type="submit" className="w-full" disabled={uploadingImages}>
+                  {uploadingImages ? "Upload en cours..." : (editingItem ? "Mettre à jour" : "Créer l'article")}
                 </Button>
               </form>
             </DialogContent>

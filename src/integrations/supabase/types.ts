@@ -512,6 +512,7 @@ export type Database = {
       }
       shop_items: {
         Row: {
+          additional_images: string[] | null
           available_sizes: string[] | null
           category: string
           content: string | null
@@ -531,6 +532,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          additional_images?: string[] | null
           available_sizes?: string[] | null
           category: string
           content?: string | null
@@ -550,6 +552,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          additional_images?: string[] | null
           available_sizes?: string[] | null
           category?: string
           content?: string | null
