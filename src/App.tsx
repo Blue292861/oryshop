@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,9 +20,16 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  // Simulate app loading completion
+  useEffect(() => {
+    const timer = setTimeout(() => setIsAppReady(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (showSplash) {
-    return <SplashScreen onComplete={() => setShowSplash(false)} />;
+    return <SplashScreen onComplete={() => setShowSplash(false)} isAppReady={isAppReady} />;
   }
 
   return (
