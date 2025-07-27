@@ -25,10 +25,8 @@ const SplashScreen = ({ onComplete, isAppReady }: SplashScreenProps) => {
     if (!isLoaded || !isAppReady || !minTimeElapsed) return;
 
     // Start fade out when everything is ready
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onComplete, 500); // Wait for fade out animation
-    }, 100);
+    setIsVisible(false);
+    const timer = setTimeout(onComplete, 600); // Wait for fade out animation to complete
 
     return () => clearTimeout(timer);
   }, [isLoaded, isAppReady, minTimeElapsed, onComplete]);
