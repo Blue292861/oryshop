@@ -23,7 +23,6 @@ interface CartContextType {
   clearCart: () => void;
   getTotalPrice: () => number;
   getTotalItems: () => number;
-  getTotalTensens: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -99,14 +98,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const getTotalTensens = () => {
-    return items.reduce((total, item) => {
-      const price = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-      // Nouvelle formule : 1% du prix public arrondi à l'entier le plus proche multiplié par 166
-      const tensensPerItem = Math.round(price * 0.01) * 166;
-      return total + (tensensPerItem * item.quantity);
-    }, 0);
-  };
 
   return (
     <CartContext.Provider value={{
@@ -116,8 +107,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       getTotalPrice,
-      getTotalItems,
-      getTotalTensens
+      getTotalItems
     }}>
       {children}
     </CartContext.Provider>

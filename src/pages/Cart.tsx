@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice, getTotalTensens } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice } = useCart();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -26,10 +26,6 @@ export default function Cart() {
         });
         return;
       }
-
-      // Calculate total price and Tensens points
-      const totalPrice = getTotalPrice();
-      const totalTensens = getTotalTensens();
 
       // Create orders for each item
       const orderPromises = items.map(async (item) => {
@@ -51,25 +47,12 @@ export default function Cart() {
 
       await Promise.all(orderPromises);
 
-      // Add Tensens points transaction
-      const { error: pointsError } = await supabase
-        .from('point_transactions')
-        .insert({
-          user_id: user.id,
-          points: totalTensens,
-          transaction_type: 'purchase_reward',
-          description: `Achat panier: ${items.length} article(s)`,
-          source_app: 'oryshop'
-        });
-
-      if (pointsError) throw pointsError;
-
       // Clear cart after successful purchase
       clearCart();
 
       toast({
         title: "Commande confirmée !",
-        description: `Vous avez gagné ${totalTensens} points Tensens !`,
+        description: "Votre commande a été traitée avec succès !",
       });
 
       // Here you would normally integrate with Stripe
@@ -118,7 +101,6 @@ export default function Cart() {
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => {
               const price = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-              const tensensPerItem = Math.round(price * 0.01) * 166;
               const itemKey = `${item.id}-${item.selectedSize || 'no-size'}`;
               
               return (
@@ -169,12 +151,8 @@ export default function Cart() {
                             <span className="text-xl font-bold text-primary">
                               {price}€
                             </span>
-                          )}
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <Coins className="h-3 w-3 mr-1" />
-                            <span>+{tensensPerItem} Tensens</span>
-                          </div>
-                        </div>
+                           )}
+                         </div>
                         
                         <div className="flex items-center gap-2">
                           <Button
@@ -219,13 +197,6 @@ export default function Cart() {
                   <div className="flex justify-between">
                     <span>Articles ({items.reduce((sum, item) => sum + item.quantity, 0)})</span>
                     <span>{getTotalPrice()}€</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span className="flex items-center">
-                      <Coins className="h-4 w-4 mr-1" />
-                      Points Tensens
-                    </span>
-                    <span>+{getTotalTensens()}</span>
                   </div>
                 </div>
                 

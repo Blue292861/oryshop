@@ -59,7 +59,6 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
   };
 
   const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-  const tensensEarned = Math.round(finalPrice * 0.01) * 166;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -153,13 +152,6 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
                     {item.price}€
                   </span>
                 )}
-              </div>
-              
-              <div className="flex items-center text-green-600">
-                <Coins className="h-5 w-5 mr-2" />
-                <span className="font-medium">
-                  +{tensensEarned} points Tensens à gagner
-                </span>
               </div>
             </div>
 
