@@ -89,7 +89,7 @@ export default function SalesExport() {
           'Nom du produit': order.item_name,
           'Catégorie': shopItem?.category || 'N/A',
           'Identifiant produit': shopItem?.product_id || 'N/A',
-          'Prix (€)': (order.price / 100).toFixed(2),
+          'Prix (€)': order.price.toFixed(2),
           'ID Commande': order.id,
         };
       });

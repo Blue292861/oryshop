@@ -267,7 +267,7 @@ export default function Shop() {
                         </div>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Coins className="h-3 w-3 mr-1" />
-                          <span>+{Math.round(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.01)) * 166}</span>
+                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
                         </div>
                       </div>
 
@@ -365,7 +365,7 @@ export default function Shop() {
                         </div>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Coins className="h-3 w-3 mr-1" />
-                          <span>+{Math.round(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.01)) * 166}</span>
+                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
                         </div>
                       </div>
 
