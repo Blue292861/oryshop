@@ -7,10 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -74,6 +74,98 @@ export type Database = {
         }
         Relationships: []
       }
+      audiobook_chapters: {
+        Row: {
+          audio_url: string
+          audiobook_id: string
+          chapter_number: number
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audio_url: string
+          audiobook_id: string
+          chapter_number: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audio_url?: string
+          audiobook_id?: string
+          chapter_number?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audiobook_chapters_audiobook_id_fkey"
+            columns: ["audiobook_id"]
+            isOneToOne: false
+            referencedRelation: "audiobooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audiobook_progress: {
+        Row: {
+          audiobook_id: string
+          chapter_id: string
+          created_at: string
+          current_time_seconds: number
+          id: string
+          is_completed: boolean
+          last_played_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audiobook_id: string
+          chapter_id: string
+          created_at?: string
+          current_time_seconds?: number
+          id?: string
+          is_completed?: boolean
+          last_played_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audiobook_id?: string
+          chapter_id?: string
+          created_at?: string
+          current_time_seconds?: number
+          id?: string
+          is_completed?: boolean
+          last_played_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audiobook_progress_audiobook_id_fkey"
+            columns: ["audiobook_id"]
+            isOneToOne: false
+            referencedRelation: "audiobooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audiobook_progress_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "audiobook_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audiobooks: {
         Row: {
           audio_url: string
@@ -81,9 +173,11 @@ export type Database = {
           cover_url: string
           created_at: string
           description: string | null
+          genre: string | null
           id: string
           is_featured: boolean
           is_month_success: boolean
+          is_paco_chronicle: boolean
           is_paco_favourite: boolean
           is_premium: boolean
           name: string
@@ -97,9 +191,11 @@ export type Database = {
           cover_url: string
           created_at?: string
           description?: string | null
+          genre?: string | null
           id?: string
           is_featured?: boolean
           is_month_success?: boolean
+          is_paco_chronicle?: boolean
           is_paco_favourite?: boolean
           is_premium?: boolean
           name: string
@@ -113,9 +209,11 @@ export type Database = {
           cover_url?: string
           created_at?: string
           description?: string | null
+          genre?: string | null
           id?: string
           is_featured?: boolean
           is_month_success?: boolean
+          is_paco_chronicle?: boolean
           is_paco_favourite?: boolean
           is_premium?: boolean
           name?: string
@@ -195,6 +293,7 @@ export type Database = {
           created_at: string
           has_chapters: boolean
           id: string
+          is_adult_content: boolean
           is_interactive: boolean
           is_month_success: boolean
           is_paco_favourite: boolean
@@ -212,6 +311,7 @@ export type Database = {
           created_at?: string
           has_chapters?: boolean
           id?: string
+          is_adult_content?: boolean
           is_interactive?: boolean
           is_month_success?: boolean
           is_paco_favourite?: boolean
@@ -229,6 +329,7 @@ export type Database = {
           created_at?: string
           has_chapters?: boolean
           id?: string
+          is_adult_content?: boolean
           is_interactive?: boolean
           is_month_success?: boolean
           is_paco_favourite?: boolean
@@ -479,8 +580,6 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
-          postal_code: string | null
-          street_address: string | null
           updated_at: string | null
           username: string | null
         }
@@ -491,8 +590,6 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
-          postal_code?: string | null
-          street_address?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -503,8 +600,6 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
-          postal_code?: string | null
-          street_address?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -526,6 +621,7 @@ export type Database = {
           name: string
           price: number
           product_id: string | null
+          required_level: number | null
           sale_price: number | null
           seller: string
           tags: string[] | null
@@ -546,6 +642,7 @@ export type Database = {
           name: string
           price: number
           product_id?: string | null
+          required_level?: number | null
           sale_price?: number | null
           seller: string
           tags?: string[] | null
@@ -566,6 +663,7 @@ export type Database = {
           name?: string
           price?: number
           product_id?: string | null
+          required_level?: number | null
           sale_price?: number | null
           seller?: string
           tags?: string[] | null
@@ -606,6 +704,125 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      tensens_code_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          points_awarded: number
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          points_awarded: number
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          points_awarded?: number
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tensens_code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "tensens_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tensens_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          current_uses: number
+          expires_at: string | null
+          id: string
+          is_single_use: boolean
+          max_uses: number | null
+          points_value: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean
+          max_uses?: number | null
+          points_value: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean
+          max_uses?: number | null
+          points_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ui_themes: {
+        Row: {
+          accent_color: string
+          background_color: string
+          created_at: string
+          description: string | null
+          font_family: string
+          id: string
+          name: string
+          primary_color: string
+          secondary_color: string
+          text_color: string
+          theme_key: Database["public"]["Enums"]["ui_theme"]
+          updated_at: string
+          vocabulary: Json
+        }
+        Insert: {
+          accent_color: string
+          background_color: string
+          created_at?: string
+          description?: string | null
+          font_family: string
+          id?: string
+          name: string
+          primary_color: string
+          secondary_color: string
+          text_color: string
+          theme_key: Database["public"]["Enums"]["ui_theme"]
+          updated_at?: string
+          vocabulary?: Json
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          created_at?: string
+          description?: string | null
+          font_family?: string
+          id?: string
+          name?: string
+          primary_color?: string
+          secondary_color?: string
+          text_color?: string
+          theme_key?: Database["public"]["Enums"]["ui_theme"]
+          updated_at?: string
+          vocabulary?: Json
         }
         Relationships: []
       }
@@ -692,6 +909,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_genre_preferences: {
+        Row: {
+          created_at: string
+          genre: string
+          id: string
+          last_read_at: string | null
+          preference_score: number
+          read_count: number
+          total_time_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          genre: string
+          id?: string
+          last_read_at?: string | null
+          preference_score?: number
+          read_count?: number
+          total_time_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          genre?: string
+          id?: string
+          last_read_at?: string | null
+          preference_score?: number
+          read_count?: number
+          total_time_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_level_info: {
+        Row: {
+          created_at: string | null
+          current_xp: number | null
+          experience_points: number | null
+          level: number | null
+          level_title: string | null
+          next_level_xp: number | null
+          total_points: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_xp?: number | null
+          experience_points?: number | null
+          level?: number | null
+          level_title?: string | null
+          next_level_xp?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_xp?: number | null
+          experience_points?: number | null
+          level?: number | null
+          level_title?: string | null
+          next_level_xp?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -796,25 +1085,87 @@ export type Database = {
           },
         ]
       }
+      user_theme_preferences: {
+        Row: {
+          admin_override_theme: Database["public"]["Enums"]["ui_theme"] | null
+          auto_theme_enabled: boolean
+          created_at: string
+          current_theme: Database["public"]["Enums"]["ui_theme"]
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_override_theme?: Database["public"]["Enums"]["ui_theme"] | null
+          auto_theme_enabled?: boolean
+          created_at?: string
+          current_theme?: Database["public"]["Enums"]["ui_theme"]
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_override_theme?: Database["public"]["Enums"]["ui_theme"] | null
+          auto_theme_enabled?: boolean
+          created_at?: string
+          current_theme?: Database["public"]["Enums"]["ui_theme"]
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      calculate_exponential_level: {
+        Args: { xp_points: number }
+        Returns: {
+          current_xp: number
+          level: number
+          level_title: string
+          next_level_xp: number
+        }[]
+      }
       calculate_level: {
         Args: { experience_points: number }
         Returns: number
       }
+      get_recommended_theme: {
+        Args: { p_user_id: string }
+        Returns: Database["public"]["Enums"]["ui_theme"]
+      }
+      sync_user_level_info: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_genre_preference: {
+        Args: {
+          p_genre: string
+          p_reading_time_minutes?: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       user_has_role: {
         Args: {
-          p_user_id: string
           p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
         }
         Returns: boolean
       }
     }
     Enums: {
       app_role: "admin"
+      ui_theme:
+        | "medieval_fantasy"
+        | "science_fiction"
+        | "slice_of_life"
+        | "romance"
+        | "western"
+        | "default"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -943,6 +1294,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin"],
+      ui_theme: [
+        "medieval_fantasy",
+        "science_fiction",
+        "slice_of_life",
+        "romance",
+        "western",
+        "default",
+      ],
     },
   },
 } as const
