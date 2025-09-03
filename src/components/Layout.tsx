@@ -2,10 +2,7 @@ import { Crown, ShoppingBag, User, Settings, LogOut, ShoppingCart } from "lucide
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
-import { User as SupabaseUser } from "@supabase/supabase-js";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 
 interface LayoutProps {
@@ -15,67 +12,18 @@ interface LayoutProps {
 export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
   const { getTotalItems } = useCart();
+  const { user, isAdmin, isLoading, signOut } = useAuth();
   const totalItems = getTotalItems();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkAdminRole(session.user.id);
-      } else {
-        setIsAdmin(false);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAdminRole = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single();
-      
-      setIsAdmin(!!data);
-    } catch (error) {
-      setIsAdmin(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Déconnecté",
-      description: "À bientôt sur Oryshop !",
-    });
+    await signOut();
     navigate('/auth');
   };
 
   const isActivePage = (path: string) => location.pathname === path;
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

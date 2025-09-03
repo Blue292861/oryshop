@@ -63,8 +63,20 @@ export default function Profile() {
 
       if (error) throw error;
 
-      setProfile(data);
-      setEditForm(data);
+      const profileData: Profile = {
+        id: data.id,
+        username: data.username || null,
+        first_name: data.first_name || null,
+        last_name: data.last_name || null,
+        avatar_url: data.avatar_url || null,
+        street_address: (data as any).street_address || null,
+        city: data.city || null,
+        postal_code: (data as any).postal_code || null,
+        country: data.country || null,
+      };
+
+      setProfile(profileData);
+      setEditForm(profileData);
     } catch (error: any) {
       toast({
         title: "Erreur",
