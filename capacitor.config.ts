@@ -1,24 +1,20 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.ae9236977fd84208ad097c8dfdbef590',
-  appName: 'oryshop',
+  appId: 'com.oryshop.app',
+  appName: 'OryShop',
   webDir: 'dist',
-  server: {
-    url: 'https://ae923697-7fd8-4208-ad09-7c8dfdbef590.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 3000,
       launchAutoHide: true,
-      backgroundColor: "#000000",
+      backgroundColor: "#1a1a1a",
       androidSplashResourceName: "splash",
       androidScaleType: "CENTER_CROP",
       showSpinner: false,
       androidSpinnerStyle: "large",
       iosSpinnerStyle: "small",
-      spinnerColor: "#999999",
+      spinnerColor: "#d4af37",
       splashFullScreen: true,
       splashImmersive: true,
       layoutName: "launch_screen",
