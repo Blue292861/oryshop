@@ -46,66 +46,88 @@ export const Layout = ({ children }: LayoutProps) => {
             </h1>
           </div>
 
-          {user && (
-            <nav className="flex items-center gap-1 md:gap-2">
-              <Button
-                variant={isActivePage('/') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
-              >
-                <ShoppingBag className="h-4 w-4" />
-                <span className="hidden sm:inline">Boutique</span>
-              </Button>
+          <nav className="flex items-center gap-1 md:gap-2">
+            <Button
+              variant={isActivePage('/') ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden sm:inline">Accueil</span>
+            </Button>
 
-              <Button
-                variant={isActivePage('/cart') ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => navigate('/cart')}
-                className="flex items-center gap-1 md:gap-2 px-2 md:px-3 relative"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span className="hidden sm:inline">Panier</span>
-                {totalItems > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 h-5 w-5 flex items-center justify-center">
-                    {totalItems}
-                  </Badge>
+            <Button
+              variant={isActivePage('/shop') ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => navigate('/shop')}
+              className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">Boutique</span>
+            </Button>
+
+            {user ? (
+              <>
+                <Button
+                  variant={isActivePage('/cart') ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => navigate('/cart')}
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3 relative"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Panier</span>
+                  {totalItems > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5 h-5 w-5 flex items-center justify-center">
+                      {totalItems}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  variant={isActivePage('/profile') ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => navigate('/profile')}
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">Profil</span>
+                </Button>
+
+                {isAdmin && (
+                  <Button
+                    variant={isActivePage('/admin') ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </Button>
                 )}
-              </Button>
 
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3 text-destructive hover:text-destructive"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden md:inline">Déconnexion</span>
+                </Button>
+              </>
+            ) : (
               <Button
-                variant={isActivePage('/profile') ? 'default' : 'ghost'}
+                variant="default"
                 size="sm"
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/auth')}
                 className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
               >
                 <User className="h-4 w-4" />
-                <span className="hidden sm:inline">Profil</span>
+                <span className="hidden sm:inline">Connexion</span>
               </Button>
-
-              {isAdmin && (
-                <Button
-                  variant={isActivePage('/admin') ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => navigate('/admin')}
-                  className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Admin</span>
-                </Button>
-              )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-1 md:gap-2 px-2 md:px-3 text-destructive hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden md:inline">Déconnexion</span>
-              </Button>
-            </nav>
-          )}
+            )}
+          </nav>
         </div>
       </header>
 
