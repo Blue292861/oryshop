@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice } = useCart();
+  const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice, getShippingCost, getTotalWithShipping } = useCart();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -198,13 +198,17 @@ export default function Cart() {
                     <span>Articles ({items.reduce((sum, item) => sum + item.quantity, 0)})</span>
                     <span>{getTotalPrice()}€</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Frais de port</span>
+                    <span>{getShippingCost()}€</span>
+                  </div>
                 </div>
                 
                 <hr className="border-border" />
                 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>{getTotalPrice()}€</span>
+                  <span>{getTotalWithShipping()}€</span>
                 </div>
                 
                 <Button 

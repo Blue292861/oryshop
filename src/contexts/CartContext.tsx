@@ -22,6 +22,8 @@ interface CartContextType {
   updateQuantity: (id: string, quantity: number, selectedSize?: string) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
+  getShippingCost: () => number;
+  getTotalWithShipping: () => number;
   getTotalItems: () => number;
 }
 
@@ -94,6 +96,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 0);
   };
 
+  const getShippingCost = () => {
+    return items.length > 0 ? 4 : 0;
+  };
+
+  const getTotalWithShipping = () => {
+    return getTotalPrice() + getShippingCost();
+  };
+
   const getTotalItems = () => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
@@ -107,6 +117,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateQuantity,
       clearCart,
       getTotalPrice,
+      getShippingCost,
+      getTotalWithShipping,
       getTotalItems
     }}>
       {children}
