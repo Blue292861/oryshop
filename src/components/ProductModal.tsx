@@ -184,17 +184,6 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
               </div>
             )}
 
-            {/* Rating */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center">
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <Star className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <span className="text-sm text-muted-foreground">(4.0/5)</span>
-            </div>
 
             {/* Add to Cart Button */}
             <Button 
