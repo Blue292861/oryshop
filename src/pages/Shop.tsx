@@ -227,7 +227,7 @@ export default function Shop() {
                         <img
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute top-2 right-2 flex flex-col gap-1">
                           {item.is_on_sale && (
@@ -322,11 +322,11 @@ export default function Shop() {
                   >
                     <CardHeader className="p-0">
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
+                         <img
+                           src={item.image_url}
+                           alt={item.name}
+                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                         />
                         <div className="absolute top-2 right-2 flex flex-col gap-1">
                           {item.is_on_sale && (
                             <Badge className="bg-red-600 text-white">
