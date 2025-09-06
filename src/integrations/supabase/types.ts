@@ -574,6 +574,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           city: string | null
           country: string | null
@@ -584,6 +585,7 @@ export type Database = {
           username: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           city?: string | null
           country?: string | null
@@ -594,6 +596,7 @@ export type Database = {
           username?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           city?: string | null
           country?: string | null
@@ -602,6 +605,54 @@ export type Database = {
           last_name?: string | null
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      rate_limit_log: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1133,9 +1184,50 @@ export type Database = {
         Args: { experience_points: number }
         Returns: number
       }
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_attempts?: number
+          p_user_id: string
+          p_window_minutes?: number
+        }
+        Returns: boolean
+      }
       get_recommended_theme: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["ui_theme"]
+      }
+      grant_manual_premium: {
+        Args: { p_months?: number; p_user_id: string }
+        Returns: undefined
+      }
+      grant_manual_premium_by_email_secure: {
+        Args: { p_email: string; p_months?: number }
+        Returns: undefined
+      }
+      grant_manual_premium_secure: {
+        Args: { p_months?: number; p_user_id: string }
+        Returns: undefined
+      }
+      log_admin_action: {
+        Args: { action_type: string; details?: Json; target_user_id?: string }
+        Returns: undefined
+      }
+      log_security_event: {
+        Args: { details?: Json; event_type: string; user_id?: string }
+        Returns: undefined
+      }
+      revoke_manual_premium: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      revoke_manual_premium_by_email_secure: {
+        Args: { p_email: string }
+        Returns: undefined
+      }
+      revoke_manual_premium_secure: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       sync_user_level_info: {
         Args: Record<PropertyKey, never>

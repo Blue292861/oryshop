@@ -90,10 +90,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => {
+    return parseFloat(items.reduce((total, item) => {
       const price = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
       return total + (price * item.quantity);
-    }, 0);
+    }, 0).toFixed(2));
   };
 
   const getShippingCost = () => {
@@ -101,7 +101,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const getTotalWithShipping = () => {
-    return getTotalPrice() + getShippingCost();
+    return parseFloat((getTotalPrice() + getShippingCost()).toFixed(2));
   };
 
   const getTotalItems = () => {

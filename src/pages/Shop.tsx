@@ -253,15 +253,15 @@ export default function Shop() {
                           {item.is_on_sale && item.sale_price ? (
                             <>
                               <span className="text-xs text-muted-foreground line-through opacity-60">
-                                {item.price}€
+                                {item.price.toFixed(2)}€
                               </span>
                               <span className="text-lg font-bold text-red-600">
-                                {item.sale_price}€
+                                {item.sale_price.toFixed(2)}€
                               </span>
                             </>
                           ) : (
                             <span className="text-lg font-bold text-primary">
-                              {item.price}€
+                              {item.price.toFixed(2)}€
                             </span>
                           )}
                         </div>
@@ -351,15 +351,15 @@ export default function Shop() {
                           {item.is_on_sale && item.sale_price ? (
                             <>
                               <span className="text-xs text-muted-foreground line-through opacity-60">
-                                {item.price}€
+                                {item.price.toFixed(2)}€
                               </span>
                               <span className="text-lg font-bold text-red-600">
-                                {item.sale_price}€
+                                {item.sale_price.toFixed(2)}€
                               </span>
                             </>
                           ) : (
                             <span className="text-lg font-bold text-primary">
-                              {item.price}€
+                              {item.price.toFixed(2)}€
                             </span>
                           )}
                         </div>

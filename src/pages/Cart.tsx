@@ -137,22 +137,22 @@ export default function Cart() {
                       </div>
                       
                       <div className="text-right space-y-2">
-                        <div className="flex flex-col items-end">
-                          {item.is_on_sale && item.sale_price ? (
-                            <>
-                              <span className="text-sm text-muted-foreground line-through">
-                                {item.price}€
-                              </span>
-                              <span className="text-xl font-bold text-red-600">
-                                {price}€
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-xl font-bold text-primary">
-                              {price}€
-                            </span>
-                           )}
-                         </div>
+                         <div className="flex flex-col items-end">
+                           {item.is_on_sale && item.sale_price ? (
+                             <>
+                               <span className="text-sm text-muted-foreground line-through">
+                                 {item.price.toFixed(2)}€
+                               </span>
+                               <span className="text-xl font-bold text-red-600">
+                                 {price.toFixed(2)}€
+                               </span>
+                             </>
+                           ) : (
+                             <span className="text-xl font-bold text-primary">
+                               {price.toFixed(2)}€
+                             </span>
+                            )}
+                          </div>
                         
                         <div className="flex items-center gap-2">
                           <Button
@@ -196,11 +196,11 @@ export default function Cart() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Articles ({items.reduce((sum, item) => sum + item.quantity, 0)})</span>
-                    <span>{getTotalPrice()}€</span>
+                    <span>{getTotalPrice().toFixed(2)}€</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Frais de port</span>
-                    <span>{getShippingCost()}€</span>
+                    <span>{getShippingCost().toFixed(2)}€</span>
                   </div>
                 </div>
                 
@@ -208,7 +208,7 @@ export default function Cart() {
                 
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>{getTotalWithShipping()}€</span>
+                  <span>{getTotalWithShipping().toFixed(2)}€</span>
                 </div>
                 
                 <Button 

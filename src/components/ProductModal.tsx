@@ -141,15 +141,15 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
                 {item.is_on_sale && item.sale_price ? (
                   <>
                     <span className="text-2xl text-muted-foreground line-through">
-                      {item.price}€
+                      {item.price.toFixed(2)}€
                     </span>
                     <span className="text-3xl font-bold text-red-600">
-                      {item.sale_price}€
+                      {item.sale_price.toFixed(2)}€
                     </span>
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-primary">
-                    {item.price}€
+                    {item.price.toFixed(2)}€
                   </span>
                 )}
               </div>
