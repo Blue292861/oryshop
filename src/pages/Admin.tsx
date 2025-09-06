@@ -203,8 +203,8 @@ export default function Admin() {
         ...formData,
         image_url: finalImageUrl,
         additional_images: finalAdditionalImages,
-        price: parseInt(formData.price),
-        sale_price: formData.is_on_sale && formData.sale_price ? parseInt(formData.sale_price) : null,
+        price: parseFloat(formData.price),
+        sale_price: formData.is_on_sale && formData.sale_price ? parseFloat(formData.sale_price) : null,
         tags: formData.tags
       };
 
@@ -648,9 +648,11 @@ export default function Admin() {
                       <Input
                         id="sale_price"
                         type="number"
+                        min="0"
+                        step="0.01"
                         value={formData.sale_price}
                         onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
-                        placeholder="ex: 15"
+                        placeholder="ex: 15.99"
                       />
                     </div>
                   )}
