@@ -7,34 +7,150 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Security logging function
+const logSecurityEvent = async (supabase: any, userId: string | null, eventType: string, eventData: any, severity = 'info') => {
+  try {
+    await supabase.from('security_events').insert({
+      user_id: userId,
+      event_type: eventType,
+      event_data: eventData,
+      severity: severity,
+      created_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Failed to log security event:', error);
+  }
+};
+
+// Rate limiting function
+const checkRateLimit = async (supabase: any, userId: string | null, endpoint: string): Promise<boolean> => {
+  try {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - 15 * 60 * 1000); // 15 minutes window
+    
+    // Check current rate limit
+    const { data: rateLimitData } = await supabase
+      .from('api_rate_limits')
+      .select('request_count')
+      .eq('user_id', userId)
+      .eq('endpoint', endpoint)
+      .gte('window_start', windowStart.toISOString())
+      .single();
+    
+    if (rateLimitData && rateLimitData.request_count >= 10) { // Max 10 requests per 15 minutes
+      return false;
+    }
+    
+    // Update or insert rate limit record
+    await supabase.from('api_rate_limits').upsert({
+      user_id: userId,
+      endpoint: endpoint,
+      request_count: (rateLimitData?.request_count || 0) + 1,
+      window_start: rateLimitData ? undefined : now.toISOString()
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+    return true; // Allow on error to avoid blocking legitimate requests
+  }
+};
+
+// Input validation function
+const validateCartItems = (items: any[]): boolean => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return false;
+  }
+  
+  for (const item of items) {
+    // Validate required fields
+    if (!item.id || !item.name || typeof item.price !== 'number' || typeof item.quantity !== 'number') {
+      return false;
+    }
+    
+    // Validate data types and ranges
+    if (item.price <= 0 || item.price > 100000) { // Max price 1000€
+      return false;
+    }
+    
+    if (item.quantity <= 0 || item.quantity > 100) { // Max quantity 100
+      return false;
+    }
+    
+    // Validate string lengths
+    if (item.name.length > 200 || item.id.length > 50) {
+      return false;
+    }
+  }
+  
+  return true;
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+  // Create Supabase client using the service role key for security operations
+  const supabaseService = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
 
-    // Get authenticated user
-    const authHeader = req.headers.get("Authorization")!;
+  // Create client with anon key for user auth
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
+  try {
+    // Validate request method
+    if (req.method !== "POST") {
+      await logSecurityEvent(supabaseService, null, 'invalid_method', { method: req.method }, 'warn');
+      throw new Error("Method not allowed");
+    }
+
+    // Retrieve authenticated user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      await logSecurityEvent(supabaseService, null, 'missing_auth_header', {}, 'warn');
+      throw new Error("Authorization header required");
+    }
+
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
     
-    if (!user?.email) {
+    if (authError || !data.user?.email) {
+      await logSecurityEvent(supabaseService, null, 'auth_failed', { error: authError?.message }, 'warn');
       throw new Error("User not authenticated or email not available");
     }
 
-    // Get request body
-    const { items } = await req.json();
-    
-    if (!items || items.length === 0) {
-      throw new Error("No items provided");
+    const user = data.user;
+
+    // Rate limiting check
+    const rateLimitPassed = await checkRateLimit(supabaseService, user.id, 'create-payment');
+    if (!rateLimitPassed) {
+      await logSecurityEvent(supabaseService, user.id, 'rate_limit_exceeded', { endpoint: 'create-payment' }, 'warn');
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
+    // Parse and validate request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      await logSecurityEvent(supabaseService, user.id, 'invalid_json', { error: error.message }, 'warn');
+      throw new Error("Invalid JSON in request body");
+    }
+
+    const { items } = requestBody;
+
+    // Comprehensive input validation
+    if (!validateCartItems(items)) {
+      await logSecurityEvent(supabaseService, user.id, 'invalid_cart_items', { items }, 'warn');
+      throw new Error("Invalid cart items provided");
     }
 
     // Initialize Stripe
@@ -65,6 +181,9 @@ serve(async (req) => {
         quantity: item.quantity,
       };
     });
+
+    // Calculate total amount for logging
+    const totalAmount = lineItems.reduce((sum, item) => sum + (item.price_data.unit_amount * item.quantity), 0);
 
     // Add shipping as a line item
     const shippingCost = items.length > 0 ? 4 : 0;
@@ -101,13 +220,15 @@ serve(async (req) => {
       }
     });
 
-    // Create pending orders in database
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    // Log successful payment session creation
+    await logSecurityEvent(supabaseService, user.id, 'payment_session_created', {
+      session_id: session.id,
+      amount: totalAmount,
+      customer_id: customerId,
+      items_count: items.length
+    });
 
+    // Create pending orders in database
     const orderPromises = items.map(async (item: any) => {
       const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
       
@@ -129,10 +250,31 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error creating payment session:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    // Log security error
+    try {
+      await logSecurityEvent(supabaseService, null, 'payment_error', { 
+        error: error.message,
+        stack: error.stack 
+      }, 'error');
+    } catch (logError) {
+      console.error('Failed to log security event:', logError);
+    }
+
+    // Determine appropriate HTTP status code
+    let statusCode = 500;
+    if (error.message.includes("Rate limit exceeded")) {
+      statusCode = 429;
+    } else if (error.message.includes("not authenticated") || error.message.includes("Authorization")) {
+      statusCode = 401;
+    } else if (error.message.includes("Invalid") || error.message.includes("Method not allowed")) {
+      statusCode = 400;
+    }
+
+    return new Response(JSON.stringify({ 
+      error: statusCode === 500 ? "Internal server error" : error.message 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: statusCode,
     });
   }
 });

@@ -7,10 +7,13 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { signUpSchema, signInSchema, sanitizeObject } from '@/lib/validation';
+import { z } from 'zod';
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -29,59 +32,110 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
 
     try {
+      // Sanitize form data
+      const sanitizedData = sanitizeObject(formData);
+      
       if (isSignUp) {
+        // Validate form data for sign up
+        const validatedData = signUpSchema.parse(sanitizedData);
+
         const { error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
+          email: validatedData.email,
+          password: validatedData.password,
           options: {
-            emailRedirectTo: `${window.location.origin}/`,
             data: {
-              username: formData.username,
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              street_address: formData.streetAddress,
-              city: formData.city,
-              postal_code: formData.postalCode,
-              country: formData.country
-            }
+              username: validatedData.username,
+              first_name: validatedData.firstName,
+              last_name: validatedData.lastName,
+              street_address: validatedData.streetAddress,
+              city: validatedData.city,
+              postal_code: validatedData.postalCode,
+              country: validatedData.country,
+            },
+            emailRedirectTo: `${window.location.origin}/`
           }
         });
 
-        if (error) throw error;
+        if (error) {
+          // Handle specific Supabase auth errors
+          if (error.message.includes('already registered')) {
+            throw new Error('Cette adresse email est déjà utilisée. Essayez de vous connecter.');
+          } else if (error.message.includes('Password should be')) {
+            throw new Error('Le mot de passe ne respecte pas les critères de sécurité.');
+          } else {
+            throw error;
+          }
+        }
 
         toast({
           title: "Inscription réussie !",
-          description: "Bienvenue dans le royaume d'Oryshop !",
+          description: "Vérifiez votre email pour confirmer votre compte.",
         });
-        navigate('/');
       } else {
+        // Validate form data for sign in
+        const validatedData = signInSchema.parse(sanitizedData);
+
         const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
+          email: validatedData.email,
+          password: validatedData.password,
         });
 
-        if (error) throw error;
+        if (error) {
+          // Handle specific Supabase auth errors
+          if (error.message.includes('Invalid login credentials')) {
+            throw new Error('Email ou mot de passe incorrect.');
+          } else if (error.message.includes('Email not confirmed')) {
+            throw new Error('Veuillez confirmer votre email avant de vous connecter.');
+          } else {
+            throw error;
+          }
+        }
 
         toast({
           title: "Connexion réussie !",
-          description: "Bon retour dans le royaume d'Oryshop !",
+          description: "Bienvenue sur Oryshop !",
         });
+        
         navigate('/');
       }
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Une erreur est survenue",
-        variant: "destructive",
-      });
+      console.error('Auth error:', error);
+      
+      if (error instanceof z.ZodError) {
+        // Handle validation errors
+        const newErrors: Record<string, string> = {};
+        error.issues.forEach((issue) => {
+          if (issue.path.length > 0) {
+            newErrors[issue.path[0].toString()] = issue.message;
+          }
+        });
+        setErrors(newErrors);
+      } else {
+        // Handle other errors
+        toast({
+          title: "Erreur",
+          description: error.message || "Une erreur est survenue lors de l'authentification",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
+    // Clear field-specific error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -113,16 +167,17 @@ export default function Auth() {
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="votre@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="votre@email.com"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
+                      required
+                    />
+                  </div>
+                  {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
               </div>
 
               <div className="space-y-2">
@@ -135,10 +190,11 @@ export default function Auth() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
                     required
                   />
                 </div>
+                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
               </div>
 
               {isSignUp && (
@@ -151,8 +207,10 @@ export default function Auth() {
                         placeholder="Prénom"
                         value={formData.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        className={errors.firstName ? 'border-destructive' : ''}
                         required
                       />
+                      {errors.firstName && <p className="text-sm text-destructive mt-1">{errors.firstName}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Nom</Label>
@@ -161,8 +219,10 @@ export default function Auth() {
                         placeholder="Nom"
                         value={formData.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        className={errors.lastName ? 'border-destructive' : ''}
                         required
                       />
+                      {errors.lastName && <p className="text-sm text-destructive mt-1">{errors.lastName}</p>}
                     </div>
                   </div>
 
@@ -175,10 +235,11 @@ export default function Auth() {
                         placeholder="username"
                         value={formData.username}
                         onChange={(e) => handleInputChange('username', e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.username ? 'border-destructive' : ''}`}
                         required
                       />
                     </div>
+                    {errors.username && <p className="text-sm text-destructive mt-1">{errors.username}</p>}
                   </div>
 
                   <div className="space-y-2">
@@ -190,9 +251,10 @@ export default function Auth() {
                         placeholder="123 Rue du Château"
                         value={formData.streetAddress}
                         onChange={(e) => handleInputChange('streetAddress', e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${errors.streetAddress ? 'border-destructive' : ''}`}
                       />
                     </div>
+                    {errors.streetAddress && <p className="text-sm text-destructive mt-1">{errors.streetAddress}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -205,9 +267,10 @@ export default function Auth() {
                           placeholder="Ville"
                           value={formData.city}
                           onChange={(e) => handleInputChange('city', e.target.value)}
-                          className="pl-10"
+                          className={`pl-10 ${errors.city ? 'border-destructive' : ''}`}
                         />
                       </div>
+                      {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="postalCode">Code postal</Label>
@@ -216,7 +279,9 @@ export default function Auth() {
                         placeholder="12345"
                         value={formData.postalCode}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        className={errors.postalCode ? 'border-destructive' : ''}
                       />
+                      {errors.postalCode && <p className="text-sm text-destructive mt-1">{errors.postalCode}</p>}
                     </div>
                     <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                       <Label htmlFor="country">Pays</Label>
@@ -225,7 +290,9 @@ export default function Auth() {
                         placeholder="France"
                         value={formData.country}
                         onChange={(e) => handleInputChange('country', e.target.value)}
+                        className={errors.country ? 'border-destructive' : ''}
                       />
+                      {errors.country && <p className="text-sm text-destructive mt-1">{errors.country}</p>}
                     </div>
                   </div>
                 </>
