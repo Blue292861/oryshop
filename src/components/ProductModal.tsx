@@ -75,7 +75,7 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
               <img
                 src={allImages[currentImageIndex]}
                 alt={item.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-background"
               />
               <div className="absolute top-4 right-4 flex flex-col gap-2">
                 {item.is_on_sale && (
@@ -105,7 +105,7 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
                     <img
                       src={imageUrl}
                       alt={`Image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-background"
                     />
                   </button>
                 ))}

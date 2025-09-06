@@ -93,10 +93,10 @@ export default function Cart() {
                   <CardContent className="p-6">
                     <div className="flex gap-4">
                       <div className="w-24 h-24 relative overflow-hidden rounded-lg">
-                        <img
+                         <img
                           src={item.image_url}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain bg-background"
                         />
                         {item.is_on_sale && (
                           <Badge className="absolute top-1 right-1 bg-red-600 text-white text-xs">
@@ -105,21 +105,12 @@ export default function Cart() {
                         )}
                       </div>
                       
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
-                        {item.selectedSize && (
-                          <p className="text-sm font-medium text-primary mb-1">Taille: {item.selectedSize}</p>
-                        )}
-                        <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {item.tags?.slice(0, 2).map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                        <p className="text-sm text-muted-foreground">Par {item.seller}</p>
-                      </div>
+                       <div className="flex-1">
+                         <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
+                         {item.selectedSize && (
+                           <p className="text-sm font-medium text-primary">Taille: {item.selectedSize}</p>
+                         )}
+                       </div>
                       
                       <div className="text-right space-y-2">
                          <div className="flex flex-col items-end">
