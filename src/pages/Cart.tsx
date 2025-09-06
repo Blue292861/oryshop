@@ -27,36 +27,21 @@ export default function Cart() {
         return;
       }
 
-      // Create orders for each item
-      const orderPromises = items.map(async (item) => {
-        const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-        
-        // Create order
-        const { error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: user.id,
-            item_id: item.id,
-            item_name: item.name,
-            price: finalPrice * item.quantity,
-            status: 'completed'
-          });
-
-        if (orderError) throw orderError;
+      // Create Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: { items }
       });
 
-      await Promise.all(orderPromises);
+      if (error) {
+        throw new Error(error.message || 'Erreur lors de la création de la session de paiement');
+      }
 
-      // Clear cart after successful purchase
-      clearCart();
-
-      toast({
-        title: "Commande confirmée !",
-        description: "Votre commande a été traitée avec succès !",
-      });
-
-      // Here you would normally integrate with Stripe
-      // For now, we'll just show a success message
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('URL de paiement non reçue');
+      }
       
     } catch (error: any) {
       toast({

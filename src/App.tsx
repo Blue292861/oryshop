@@ -15,6 +15,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Cart = lazy(() => import("./pages/Cart"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const Admin = lazy(() => import("./pages/Admin"));
 const SalesExport = lazy(() => import("./pages/SalesExport"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -48,6 +49,7 @@ const App = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/shop" element={<Shop />} />
+                  <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route 
                     path="/profile" 
                     element={
