@@ -275,13 +275,6 @@ export default function Shop() {
                         <span className="text-xs text-muted-foreground">
                           {item.seller}
                         </span>
-                        <div className="flex items-center">
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-muted-foreground" />
-                        </div>
                       </div>
 
                       <Button 
@@ -373,13 +366,6 @@ export default function Shop() {
                         <span className="text-xs text-muted-foreground">
                           {item.seller}
                         </span>
-                        <div className="flex items-center">
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                          <Star className="h-3 w-3 text-muted-foreground" />
-                        </div>
                       </div>
 
                       <Button 
