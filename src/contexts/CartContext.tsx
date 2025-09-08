@@ -1,4 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+
+interface BundleDeal {
+  id: string;
+  name: string;
+  description?: string;
+  product_ids: string[];
+  discount_percentage: number;
+  is_active: boolean;
+}
+
+interface AppliedDiscount {
+  bundle_deal_id: string;
+  bundle_name: string;
+  discount_amount: number;
+  discount_percentage: number;
+}
 
 export interface CartItem {
   id: string;
@@ -25,12 +42,16 @@ interface CartContextType {
   getShippingCost: () => number;
   getTotalWithShipping: () => number;
   getTotalItems: () => number;
+  getAppliedDiscounts: () => AppliedDiscount[];
+  getTotalDiscount: () => number;
+  getSubtotal: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [bundles, setBundles] = useState<BundleDeal[]>([]);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -38,12 +59,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (savedCart) {
       setItems(JSON.parse(savedCart));
     }
+    fetchBundles();
   }, []);
 
   // Save cart to localStorage whenever items change
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
+
+  const fetchBundles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bundle_deals')
+        .select('*')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setBundles(data || []);
+    } catch (error) {
+      console.error('Error fetching bundles:', error);
+    }
+  };
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setItems(prev => {
@@ -89,11 +125,58 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setItems([]);
   };
 
-  const getTotalPrice = () => {
+  const getSubtotal = () => {
     return parseFloat(items.reduce((total, item) => {
       const price = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
       return total + (price * item.quantity);
     }, 0).toFixed(2));
+  };
+
+  const getAppliedDiscounts = (): AppliedDiscount[] => {
+    const appliedDiscounts: AppliedDiscount[] = [];
+    const cartProductIds = items.map(item => item.id);
+
+    bundles.forEach(bundle => {
+      // Check if all products in the bundle are in the cart
+      const bundleInCart = bundle.product_ids.every(productId => 
+        cartProductIds.includes(productId)
+      );
+
+      if (bundleInCart) {
+        // Calculate discount amount based on the products in the bundle
+        let bundleTotal = 0;
+        bundle.product_ids.forEach(productId => {
+          const cartItem = items.find(item => item.id === productId);
+          if (cartItem) {
+            const price = cartItem.is_on_sale && cartItem.sale_price ? cartItem.sale_price : cartItem.price;
+            bundleTotal += price * cartItem.quantity;
+          }
+        });
+
+        const discountAmount = parseFloat((bundleTotal * (bundle.discount_percentage / 100)).toFixed(2));
+        
+        appliedDiscounts.push({
+          bundle_deal_id: bundle.id,
+          bundle_name: bundle.name,
+          discount_amount: discountAmount,
+          discount_percentage: bundle.discount_percentage
+        });
+      }
+    });
+
+    return appliedDiscounts;
+  };
+
+  const getTotalDiscount = () => {
+    return parseFloat(getAppliedDiscounts().reduce((total, discount) => 
+      total + discount.discount_amount, 0
+    ).toFixed(2));
+  };
+
+  const getTotalPrice = () => {
+    const subtotal = getSubtotal();
+    const totalDiscount = getTotalDiscount();
+    return parseFloat((subtotal - totalDiscount).toFixed(2));
   };
 
   const getShippingCost = () => {
@@ -119,7 +202,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       getTotalPrice,
       getShippingCost,
       getTotalWithShipping,
-      getTotalItems
+      getTotalItems,
+      getAppliedDiscounts,
+      getTotalDiscount,
+      getSubtotal
     }}>
       {children}
     </CartContext.Provider>

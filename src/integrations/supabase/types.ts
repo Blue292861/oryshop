@@ -101,6 +101,38 @@ export type Database = {
         }
         Relationships: []
       }
+      applied_discounts: {
+        Row: {
+          applied_at: string
+          bundle_deal_id: string | null
+          discount_amount: number
+          id: string
+          order_id: string
+        }
+        Insert: {
+          applied_at?: string
+          bundle_deal_id?: string | null
+          discount_amount: number
+          id?: string
+          order_id: string
+        }
+        Update: {
+          applied_at?: string
+          bundle_deal_id?: string | null
+          discount_amount?: number
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applied_discounts_bundle_deal_id_fkey"
+            columns: ["bundle_deal_id"]
+            isOneToOne: false
+            referencedRelation: "bundle_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audiobook_chapters: {
         Row: {
           audio_url: string
@@ -365,6 +397,39 @@ export type Database = {
           summary?: string | null
           tags?: string[] | null
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bundle_deals: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_percentage: number
+          id: string
+          is_active: boolean
+          name: string
+          product_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_percentage: number
+          id?: string
+          is_active?: boolean
+          name: string
+          product_ids: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          product_ids?: string[]
           updated_at?: string
         }
         Relationships: []
@@ -720,6 +785,7 @@ export type Database = {
         Row: {
           additional_images: string[] | null
           available_sizes: string[] | null
+          categories: string[] | null
           category: string
           content: string | null
           created_at: string
@@ -741,6 +807,7 @@ export type Database = {
         Insert: {
           additional_images?: string[] | null
           available_sizes?: string[] | null
+          categories?: string[] | null
           category: string
           content?: string | null
           created_at?: string
@@ -762,6 +829,7 @@ export type Database = {
         Update: {
           additional_images?: string[] | null
           available_sizes?: string[] | null
+          categories?: string[] | null
           category?: string
           content?: string | null
           created_at?: string
@@ -1275,6 +1343,10 @@ export type Database = {
       }
       log_security_event: {
         Args: { details?: Json; event_type: string; user_id?: string }
+        Returns: undefined
+      }
+      reset_revenue_and_orders: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       revoke_manual_premium: {

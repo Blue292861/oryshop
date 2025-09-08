@@ -25,11 +25,23 @@ interface ShopItem {
   is_on_sale?: boolean;
   sale_price?: number;
   tags?: string[];
+  categories?: string[];
   is_temporary?: boolean;
   product_id?: string;
   is_clothing?: boolean;
   available_sizes?: string[];
   additional_images?: string[];
+}
+
+interface BundleDeal {
+  id: string;
+  name: string;
+  description?: string;
+  product_ids: string[];
+  discount_percentage: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AdminStats {
@@ -46,8 +58,13 @@ export default function Admin() {
   const [stats, setStats] = useState<AdminStats>({ totalItems: 0, totalRevenue: 0, totalUsers: 0, recentOrders: 0 });
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
+  const [bundles, setBundles] = useState<BundleDeal[]>([]);
+  const [editingBundle, setEditingBundle] = useState<BundleDeal | null>(null);
   const navigate = useNavigate();
+  const AVAILABLE_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -59,11 +76,20 @@ export default function Admin() {
     is_on_sale: false,
     sale_price: "",
     tags: [] as string[],
+    categories: [] as string[],
     is_temporary: false,
     product_id: "",
     is_clothing: false,
     available_sizes: [] as string[],
     additional_images: [] as string[]
+  });
+
+  const [bundleFormData, setBundleFormData] = useState({
+    name: "",
+    description: "",
+    product_ids: [] as string[],
+    discount_percentage: "",
+    is_active: true
   });
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
@@ -74,6 +100,7 @@ export default function Admin() {
   useEffect(() => {
     fetchItems();
     fetchStats();
+    fetchBundles();
   }, []);
 
   useEffect(() => {
@@ -93,6 +120,20 @@ export default function Admin() {
       item.seller.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredItems(filtered);
+  };
+
+  const fetchBundles = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bundle_deals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBundles(data || []);
+    } catch (error: any) {
+      console.error('Error fetching bundles:', error);
+    }
   };
 
   const fetchItems = async () => {
@@ -221,7 +262,7 @@ export default function Admin() {
             content: finalData.content,
             is_on_sale: finalData.is_on_sale,
             sale_price: finalData.sale_price,
-            tags: finalData.tags,
+            categories: finalData.categories,
             is_temporary: finalData.is_temporary,
             product_id: finalData.product_id,
             is_clothing: finalData.is_clothing,
@@ -274,6 +315,7 @@ export default function Admin() {
         is_on_sale: false,
         sale_price: "",
         tags: [],
+        categories: [],
         is_temporary: false,
         product_id: "",
         is_clothing: false,
@@ -308,6 +350,7 @@ export default function Admin() {
       is_on_sale: item.is_on_sale || false,
       sale_price: item.sale_price ? item.sale_price.toString() : "",
       tags: item.tags || [],
+      categories: item.categories || [],
       is_temporary: item.is_temporary || false,
       product_id: item.product_id || "",
       is_clothing: item.is_clothing || false,
@@ -331,6 +374,7 @@ export default function Admin() {
       is_on_sale: false,
       sale_price: "",
       tags: [],
+      categories: [],
       is_temporary: false,
       product_id: "",
       is_clothing: false,
@@ -423,6 +467,32 @@ export default function Admin() {
           
           <div className="flex items-center gap-2">
             <Button
+              onClick={async () => {
+                if (confirm("Êtes-vous sûr de vouloir supprimer toutes les commandes et remettre les revenus à zéro ? Cette action est irréversible.")) {
+                  try {
+                    const { error } = await supabase.rpc('reset_revenue_and_orders');
+                    if (error) throw error;
+                    toast({
+                      title: "Reset effectué",
+                      description: "Les revenus et commandes ont été remis à zéro",
+                    });
+                    fetchStats();
+                  } catch (error: any) {
+                    toast({
+                      title: "Erreur",
+                      description: error.message || "Erreur lors du reset",
+                      variant: "destructive",
+                    });
+                  }
+                }
+              }}
+              variant="destructive"
+              size="sm"
+            >
+              Reset Revenus
+            </Button>
+            
+            <Button
               onClick={() => navigate('/admin/sales-export')}
               variant="outline"
               className="flex items-center gap-2"
@@ -430,6 +500,211 @@ export default function Admin() {
               <FileSpreadsheet className="h-4 w-4" />
               Export des ventes
             </Button>
+            
+            <Dialog open={bundleDialogOpen} onOpenChange={setBundleDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Gestion des lots
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Gestion des lots avec remises</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Form for creating/editing bundles */}
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      const bundleData = {
+                        name: bundleFormData.name,
+                        description: bundleFormData.description,
+                        product_ids: bundleFormData.product_ids,
+                        discount_percentage: parseFloat(bundleFormData.discount_percentage),
+                        is_active: bundleFormData.is_active
+                      };
+
+                      if (editingBundle) {
+                        const { error } = await supabase
+                          .from('bundle_deals')
+                          .update(bundleData)
+                          .eq('id', editingBundle.id);
+                        if (error) throw error;
+                        toast({
+                          title: "Lot mis à jour",
+                          description: "Le lot a été modifié avec succès",
+                        });
+                      } else {
+                        const { error } = await supabase
+                          .from('bundle_deals')
+                          .insert([bundleData]);
+                        if (error) throw error;
+                        toast({
+                          title: "Lot créé",
+                          description: "Le nouveau lot a été créé avec succès",
+                        });
+                      }
+
+                      setBundleFormData({
+                        name: "",
+                        description: "",
+                        product_ids: [],
+                        discount_percentage: "",
+                        is_active: true
+                      });
+                      setEditingBundle(null);
+                      fetchBundles();
+                    } catch (error: any) {
+                      toast({
+                        title: "Erreur",
+                        description: error.message || "Erreur lors de la sauvegarde",
+                        variant: "destructive",
+                      });
+                    }
+                  }} className="space-y-4 p-4 border rounded-lg">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="bundle_name">Nom du lot</Label>
+                        <Input
+                          id="bundle_name"
+                          value={bundleFormData.name}
+                          onChange={(e) => setBundleFormData(prev => ({ ...prev, name: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="bundle_discount">Remise (%)</Label>
+                        <Input
+                          id="bundle_discount"
+                          type="number"
+                          min="1"
+                          max="100"
+                          step="0.01"
+                          value={bundleFormData.discount_percentage}
+                          onChange={(e) => setBundleFormData(prev => ({ ...prev, discount_percentage: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="bundle_description">Description (optionnel)</Label>
+                      <Textarea
+                        id="bundle_description"
+                        value={bundleFormData.description}
+                        onChange={(e) => setBundleFormData(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Produits inclus dans le lot</Label>
+                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+                        {items.map((item) => (
+                          <div key={item.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`bundle-product-${item.id}`}
+                              checked={bundleFormData.product_ids.includes(item.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setBundleFormData(prev => ({
+                                    ...prev,
+                                    product_ids: [...prev.product_ids, item.id]
+                                  }));
+                                } else {
+                                  setBundleFormData(prev => ({
+                                    ...prev,
+                                    product_ids: prev.product_ids.filter(id => id !== item.id)
+                                  }));
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={`bundle-product-${item.id}`} className="text-sm">
+                              {item.name} - {item.price}€
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="bundle_active"
+                        checked={bundleFormData.is_active}
+                        onChange={(e) => setBundleFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor="bundle_active">Lot actif</Label>
+                    </div>
+                    <Button type="submit" className="w-full">
+                      {editingBundle ? "Mettre à jour le lot" : "Créer le lot"}
+                    </Button>
+                  </form>
+
+                  {/* List of existing bundles */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">Lots existants</h3>
+                    {bundles.map((bundle) => (
+                      <div key={bundle.id} className="p-3 border rounded-lg flex justify-between items-start">
+                        <div>
+                          <h4 className="font-medium">{bundle.name}</h4>
+                          <p className="text-sm text-muted-foreground">{bundle.description}</p>
+                          <p className="text-sm">Remise: {bundle.discount_percentage}%</p>
+                          <p className="text-sm">Produits: {bundle.product_ids.length}</p>
+                          <p className="text-sm">Status: {bundle.is_active ? "Actif" : "Inactif"}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingBundle(bundle);
+                              setBundleFormData({
+                                name: bundle.name,
+                                description: bundle.description || "",
+                                product_ids: bundle.product_ids,
+                                discount_percentage: bundle.discount_percentage.toString(),
+                                is_active: bundle.is_active
+                              });
+                            }}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              if (confirm("Supprimer ce lot ?")) {
+                                try {
+                                  const { error } = await supabase
+                                    .from('bundle_deals')
+                                    .delete()
+                                    .eq('id', bundle.id);
+                                  if (error) throw error;
+                                  toast({
+                                    title: "Lot supprimé",
+                                    description: "Le lot a été supprimé avec succès",
+                                  });
+                                  fetchBundles();
+                                } catch (error: any) {
+                                  toast({
+                                    title: "Erreur",
+                                    description: error.message || "Erreur lors de la suppression",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -606,9 +881,51 @@ export default function Admin() {
                   />
                 </div>
 
+                {/* Categories Section */}
+                <div className="space-y-2">
+                  <Label>Catégories</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AVAILABLE_CATEGORIES.map((category) => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`category-${category}`}
+                          checked={formData.categories.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData(prev => ({
+                                ...prev,
+                                categories: [...prev.categories, category]
+                              }));
+                            } else {
+                              setFormData(prev => ({
+                                ...prev,
+                                categories: prev.categories.filter(c => c !== category)
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <Label htmlFor={`category-${category}`} className="text-sm capitalize">
+                          {category}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.categories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.categories.map((category, index) => (
+                        <Badge key={index} variant="secondary">
+                          {category}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Tags Section */}
                 <div className="space-y-2">
-                  <Label>Tags</Label>
+                  <Label>Tags (optionnel)</Label>
                   <div className="flex gap-2">
                     <Input
                       value={tagInput}

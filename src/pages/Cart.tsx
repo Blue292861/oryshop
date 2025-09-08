@@ -9,7 +9,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 
 export default function Cart() {
-  const { items, updateQuantity, removeFromCart, clearCart, getTotalPrice, getShippingCost, getTotalWithShipping } = useCart();
+  const { 
+    items, 
+    updateQuantity, 
+    removeFromCart, 
+    clearCart, 
+    getTotalPrice, 
+    getShippingCost, 
+    getTotalWithShipping,
+    getSubtotal,
+    getAppliedDiscounts,
+    getTotalDiscount
+  } = useCart();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -171,9 +182,27 @@ export default function Cart() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Articles ({items.reduce((sum, item) => sum + item.quantity, 0)})</span>
-                    <span>{getTotalPrice().toFixed(2)}€</span>
+                    <span>Sous-total ({items.reduce((sum, item) => sum + item.quantity, 0)} articles)</span>
+                    <span>{getSubtotal().toFixed(2)}€</span>
                   </div>
+                  
+                  {/* Applied Discounts */}
+                  {getAppliedDiscounts().map((discount, index) => (
+                    <div key={index} className="flex justify-between text-green-600">
+                      <span className="text-sm">
+                        🎉 {discount.bundle_name} (-{discount.discount_percentage}%)
+                      </span>
+                      <span>-{discount.discount_amount.toFixed(2)}€</span>
+                    </div>
+                  ))}
+                  
+                  {getTotalDiscount() > 0 && (
+                    <div className="flex justify-between font-medium text-green-600">
+                      <span>Total des remises:</span>
+                      <span>-{getTotalDiscount().toFixed(2)}€</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between">
                     <span>Frais de port</span>
                     <span>{getShippingCost().toFixed(2)}€</span>

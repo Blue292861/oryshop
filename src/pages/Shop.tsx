@@ -21,6 +21,7 @@ interface ShopItem {
   is_on_sale?: boolean;
   sale_price?: number;
   tags?: string[];
+  categories?: string[];
   is_temporary?: boolean;
 }
 
@@ -30,13 +31,13 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedTag, setSelectedTag] = useState("all");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
+
+  const PREDEFINED_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
 
   useEffect(() => {
     fetchItems();
@@ -44,7 +45,7 @@ export default function Shop() {
 
   useEffect(() => {
     filterItems();
-  }, [items, searchTerm, selectedCategory, selectedTag]);
+  }, [items, searchTerm, selectedCategory]);
 
   const fetchItems = async () => {
     try {
@@ -57,17 +58,21 @@ export default function Shop() {
 
       setItems(data || []);
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set((data || []).map(item => item.category))];
-      setCategories(uniqueCategories);
+      // Extract unique categories from both category field and categories array
+      const allCategories = new Set<string>();
+      (data || []).forEach(item => {
+        if (item.categories && Array.isArray(item.categories)) {
+          item.categories.forEach((cat: string) => allCategories.add(cat));
+        }
+        if (item.category) {
+          allCategories.add(item.category);
+        }
+      });
       
-      // Extract unique tags and ensure "seulement ce mois-ci" is always included
-      const allTags = (data || []).flatMap(item => item.tags || []);
-      const uniqueTags = [...new Set(allTags)];
-      if (!uniqueTags.includes("seulement ce mois-ci")) {
-        uniqueTags.unshift("seulement ce mois-ci");
-      }
-      setTags(uniqueTags);
+      // Add predefined categories that might not be in use yet
+      PREDEFINED_CATEGORIES.forEach(cat => allCategories.add(cat));
+      
+      setAvailableCategories(Array.from(allCategories).sort());
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -86,16 +91,18 @@ export default function Shop() {
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.categories && item.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()))) ||
         (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
     }
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter(item => item.category === selectedCategory);
-    }
-
-    if (selectedTag !== "all") {
-      filtered = filtered.filter(item => item.tags && item.tags.includes(selectedTag));
+      filtered = filtered.filter(item => {
+        // Check both the categories array and the single category field for backward compatibility
+        const hasCategory = (item.categories && item.categories.includes(selectedCategory)) || 
+                           item.category === selectedCategory;
+        return hasCategory;
+      });
     }
 
     setFilteredItems(filtered);
@@ -165,55 +172,34 @@ export default function Shop() {
             >
               Toutes
             </Button>
-            {categories.map((category) => (
+            {availableCategories.map((category) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category)}
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm capitalize"
               >
                 {category}
               </Button>
             ))}
           </div>
-
-          {/* Tag Filters */}
-          {tags.length > 0 && (
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-              <Tag className="h-4 w-4 text-muted-foreground hidden sm:inline" />
-              <span className="text-sm text-muted-foreground hidden sm:inline">Tags:</span>
-              <Button
-                variant={selectedTag === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedTag("all")}
-              >
-                Tous
-              </Button>
-              {tags.map((tag) => (
-                <Button
-                  key={tag}
-                  variant={selectedTag === tag ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedTag(tag)}
-                  className="text-xs sm:text-sm"
-                >
-                  {tag}
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Items Grid by Categories */}
-        {tags.map((tag) => {
-          const categoryItems = filteredItems.filter(item => item.tags && item.tags.includes(tag));
+        {PREDEFINED_CATEGORIES.map((categoryName) => {
+          const categoryItems = filteredItems.filter(item => {
+            // Check both the categories array and the single category field for backward compatibility
+            return (item.categories && item.categories.includes(categoryName)) || 
+                   item.category === categoryName;
+          });
+          
           if (categoryItems.length === 0) return null;
           
           return (
-            <div key={tag} className="space-y-6">
-              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
-                {tag}
+            <div key={categoryName} className="space-y-6">
+              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2 capitalize">
+                {categoryName}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {categoryItems.map((item) => (
@@ -296,10 +282,14 @@ export default function Shop() {
           );
         })}
 
-        {/* Items without tags */}
+        {/* Items without categories */}
         {(() => {
-          const itemsWithoutTags = filteredItems.filter(item => !item.tags || item.tags.length === 0);
-          if (itemsWithoutTags.length === 0) return null;
+          const itemsWithoutCategories = filteredItems.filter(item => {
+            return (!item.categories || item.categories.length === 0) && 
+                   (!item.category || !PREDEFINED_CATEGORIES.includes(item.category));
+          });
+          
+          if (itemsWithoutCategories.length === 0) return null;
           
           return (
             <div className="space-y-6">
@@ -307,7 +297,7 @@ export default function Shop() {
                 Sans catégorie
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {itemsWithoutTags.map((item) => (
+                {itemsWithoutCategories.map((item) => (
                   <Card 
                     key={item.id} 
                     className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
