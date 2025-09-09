@@ -1,14 +1,15 @@
-import { useState, useEffect } from "react";
-import { ShoppingCart, Star, Coins, Filter, Search, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Layout } from "@/components/Layout";
-import { useCart } from "@/contexts/CartContext";
-import ProductModal from "@/components/ProductModal";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
+import { ShoppingCart, Search, Filter, Coins } from 'lucide-react';
+import { Layout } from '@/components/Layout';
+import ProductModal from '@/components/ProductModal';
 
 interface ShopItem {
   id: string;
@@ -25,7 +26,16 @@ interface ShopItem {
   is_temporary?: boolean;
 }
 
+const PREDEFINED_CATEGORIES = [
+  { id: 'livres', name: 'Livres', icon: '📚' },
+  { id: 'produits-derives', name: 'Produits Dérivés', icon: '🎁' },
+  { id: 'packs', name: 'Packs', icon: '📦' },
+  { id: 'accessoires', name: 'Accessoires', icon: '⚔️' },
+  { id: 'vetements', name: 'Vêtements', icon: '👕' }
+];
+
 export default function Shop() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<ShopItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +46,6 @@ export default function Shop() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
   const { toast } = useToast();
-
-  const PREDEFINED_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
 
   useEffect(() => {
     fetchItems();
@@ -70,7 +78,7 @@ export default function Shop() {
       });
       
       // Add predefined categories that might not be in use yet
-      PREDEFINED_CATEGORIES.forEach(cat => allCategories.add(cat));
+      PREDEFINED_CATEGORIES.forEach(cat => allCategories.add(cat.name));
       
       setAvailableCategories(Array.from(allCategories).sort());
     } catch (error: any) {
@@ -147,7 +155,7 @@ export default function Shop() {
           </p>
         </div>
 
-        {/* Filters */}
+        {/* Search Bar */}
         <div className="space-y-4">
           <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
             <div className="relative flex-1 max-w-md mx-auto lg:mx-0">
@@ -160,46 +168,55 @@ export default function Shop() {
               />
             </div>
           </div>
-          
-          {/* Category Filters */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground hidden sm:inline" />
-            <span className="text-sm text-muted-foreground hidden sm:inline">Catégories:</span>
-            <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory("all")}
-            >
-              Toutes
-            </Button>
-            {availableCategories.map((category) => (
+        </div>
+
+        {/* Category Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+          {PREDEFINED_CATEGORIES.map((cat) => {
+            const categoryItems = filteredItems.filter(item => 
+              item.categories?.includes(cat.id) || 
+              (cat.id === 'livres' && item.category === 'livre') ||
+              (cat.id === 'produits-derives' && item.category === 'produit dérivé') ||
+              (cat.id === 'packs' && item.category === 'pack') ||
+              (cat.id === 'accessoires' && item.category === 'accessoire') ||
+              (cat.id === 'vetements' && item.category === 'vêtement')
+            );
+            
+            return (
               <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className="text-xs sm:text-sm capitalize"
+                key={cat.id}
+                variant="outline"
+                onClick={() => navigate(`/shop/category/${cat.id}`)}
+                className="h-auto p-4 flex flex-col items-center gap-2 cursor-feather hover:bg-primary/10"
               >
-                {category}
+                <span className="text-2xl">{cat.icon}</span>
+                <span className="text-sm font-medium cursor-feather">{cat.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {categoryItems.length} produit{categoryItems.length > 1 ? 's' : ''}
+                </span>
               </Button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         {/* Items Grid by Categories */}
-        {PREDEFINED_CATEGORIES.map((categoryName) => {
+        {PREDEFINED_CATEGORIES.map((categoryObj) => {
           const categoryItems = filteredItems.filter(item => {
             // Check both the categories array and the single category field for backward compatibility
-            return (item.categories && item.categories.includes(categoryName)) || 
-                   item.category === categoryName;
+            return (item.categories && item.categories.includes(categoryObj.id)) || 
+                   (categoryObj.id === 'livres' && item.category === 'livre') ||
+                   (categoryObj.id === 'produits-derives' && item.category === 'produit dérivé') ||
+                   (categoryObj.id === 'packs' && item.category === 'pack') ||
+                   (categoryObj.id === 'accessoires' && item.category === 'accessoire') ||
+                   (categoryObj.id === 'vetements' && item.category === 'vêtement');
           });
           
           if (categoryItems.length === 0) return null;
           
           return (
-            <div key={categoryName} className="space-y-6">
+            <div key={categoryObj.id} className="space-y-6">
               <h2 className="text-2xl font-bold text-primary border-b border-border pb-2 capitalize">
-                {categoryName}
+                {categoryObj.name}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 {categoryItems.map((item) => (
@@ -286,7 +303,7 @@ export default function Shop() {
         {(() => {
           const itemsWithoutCategories = filteredItems.filter(item => {
             return (!item.categories || item.categories.length === 0) && 
-                   (!item.category || !PREDEFINED_CATEGORIES.includes(item.category));
+                   (!item.category || !PREDEFINED_CATEGORIES.map(c => c.id).includes(item.category));
           });
           
           if (itemsWithoutCategories.length === 0) return null;

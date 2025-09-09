@@ -18,6 +18,7 @@ const Cart = lazy(() => import("./pages/Cart"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const Admin = lazy(() => import("./pages/Admin"));
 const SalesExport = lazy(() => import("./pages/SalesExport"));
+const CategoryShop = lazy(() => import("./pages/CategoryShop"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => {
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route path="/shop" element={<Shop />} />
+                  <Route path="/shop/category/:category" element={<CategoryShop />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route 
                     path="/profile" 
