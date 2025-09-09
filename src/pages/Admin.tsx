@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
@@ -62,6 +63,14 @@ export default function Admin() {
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
   const [bundles, setBundles] = useState<BundleDeal[]>([]);
   const [editingBundle, setEditingBundle] = useState<BundleDeal | null>(null);
+  
+  // New state for enhanced bundle management
+  const [bundleProductSearch, setBundleProductSearch] = useState("");
+  const [bundleSearch, setBundleSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("tous");
+  const [selectedTagFilter, setSelectedTagFilter] = useState("");
+  const [filteredBundles, setFilteredBundles] = useState<BundleDeal[]>([]);
+  
   const navigate = useNavigate();
   const AVAILABLE_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
   
@@ -107,6 +116,23 @@ export default function Admin() {
     filterItems();
   }, [items, searchTerm]);
 
+  useEffect(() => {
+    filterBundles();
+  }, [bundles, bundleSearch]);
+
+  const filterBundles = () => {
+    let filtered = bundles;
+    
+    if (bundleSearch.trim()) {
+      filtered = filtered.filter(bundle =>
+        bundle.name.toLowerCase().includes(bundleSearch.toLowerCase()) ||
+        (bundle.description && bundle.description.toLowerCase().includes(bundleSearch.toLowerCase()))
+      );
+    }
+    
+    setFilteredBundles(filtered);
+  };
+
   const filterItems = () => {
     if (!searchTerm.trim()) {
       setFilteredItems(items);
@@ -131,6 +157,7 @@ export default function Admin() {
 
       if (error) throw error;
       setBundles(data || []);
+      setFilteredBundles(data || []);
     } catch (error: any) {
       console.error('Error fetching bundles:', error);
     }
@@ -438,6 +465,109 @@ export default function Admin() {
     setDialogOpen(true);
   };
 
+  const renderProductList = (category?: string) => {
+    let productsToShow = items;
+    
+    // Filter by category if provided
+    if (category) {
+      productsToShow = items.filter(item => 
+        item.categories?.includes(category) || 
+        (category === item.category)
+      );
+    }
+    
+    // Filter by search term
+    if (bundleProductSearch.trim()) {
+      productsToShow = productsToShow.filter(item =>
+        item.name.toLowerCase().includes(bundleProductSearch.toLowerCase()) ||
+        item.description.toLowerCase().includes(bundleProductSearch.toLowerCase()) ||
+        item.tags?.some(tag => tag.toLowerCase().includes(bundleProductSearch.toLowerCase()))
+      );
+    }
+    
+    // Filter by tag if selected
+    if (selectedTagFilter) {
+      productsToShow = productsToShow.filter(item =>
+        item.tags?.includes(selectedTagFilter)
+      );
+    }
+    
+    // Get unique tags for filter dropdown
+    const availableTags = [...new Set(productsToShow.flatMap(item => item.tags || []))];
+    
+    return (
+      <div className="space-y-3">
+        {/* Tag filter for current category */}
+        {availableTags.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            <select
+              value={selectedTagFilter}
+              onChange={(e) => setSelectedTagFilter(e.target.value)}
+              className="px-3 py-1 border rounded-md text-sm bg-background"
+            >
+              <option value="">Tous les tags</option>
+              {availableTags.map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+            {selectedTagFilter && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSelectedTagFilter("")}
+                className="h-6 px-2 text-xs"
+              >
+                Effacer
+              </Button>
+            )}
+          </div>
+        )}
+        
+        {/* Products list */}
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
+          {productsToShow.map((item) => (
+            <div key={item.id} className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id={`bundle-product-${item.id}`}
+                checked={bundleFormData.product_ids.includes(item.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setBundleFormData(prev => ({
+                      ...prev,
+                      product_ids: [...prev.product_ids, item.id]
+                    }));
+                  } else {
+                    setBundleFormData(prev => ({
+                      ...prev,
+                      product_ids: prev.product_ids.filter(id => id !== item.id)
+                    }));
+                  }
+                }}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor={`bundle-product-${item.id}`} className="text-sm">
+                {item.name} - {item.price}€
+                {item.tags && item.tags.length > 0 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    [{item.tags.join(', ')}]
+                  </span>
+                )}
+              </Label>
+            </div>
+          ))}
+        </div>
+        
+        {productsToShow.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Aucun produit trouvé
+          </p>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -597,34 +727,39 @@ export default function Admin() {
                     </div>
                     <div>
                       <Label>Produits inclus dans le lot</Label>
-                      <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
-                        {items.map((item) => (
-                          <div key={item.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id={`bundle-product-${item.id}`}
-                              checked={bundleFormData.product_ids.includes(item.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setBundleFormData(prev => ({
-                                    ...prev,
-                                    product_ids: [...prev.product_ids, item.id]
-                                  }));
-                                } else {
-                                  setBundleFormData(prev => ({
-                                    ...prev,
-                                    product_ids: prev.product_ids.filter(id => id !== item.id)
-                                  }));
-                                }
-                              }}
-                              className="rounded border-gray-300"
-                            />
-                            <Label htmlFor={`bundle-product-${item.id}`} className="text-sm">
-                              {item.name} - {item.price}€
-                            </Label>
-                          </div>
-                        ))}
+                      
+                      {/* Search bar for products */}
+                      <div className="relative mb-4">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Rechercher des produits..."
+                          value={bundleProductSearch}
+                          onChange={(e) => setBundleProductSearch(e.target.value)}
+                          className="pl-8"
+                        />
                       </div>
+
+                      {/* Category tabs */}
+                      <Tabs value={activeCategory} onValueChange={setActiveCategory} className="mb-4">
+                        <TabsList className="grid w-full grid-cols-6">
+                          <TabsTrigger value="tous">Tous</TabsTrigger>
+                          {AVAILABLE_CATEGORIES.map((category) => (
+                            <TabsTrigger key={category} value={category}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                        
+                        <TabsContent value="tous" className="mt-4">
+                          {renderProductList()}
+                        </TabsContent>
+                        
+                        {AVAILABLE_CATEGORIES.map((category) => (
+                          <TabsContent key={category} value={category} className="mt-4">
+                            {renderProductList(category)}
+                          </TabsContent>
+                        ))}
+                      </Tabs>
                     </div>
                     <div className="flex items-center space-x-2">
                       <input
@@ -644,7 +779,19 @@ export default function Admin() {
                   {/* List of existing bundles */}
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold">Lots existants</h3>
-                    {bundles.map((bundle) => (
+                    
+                    {/* Search bar for bundles */}
+                    <div className="relative">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Rechercher des lots..."
+                        value={bundleSearch}
+                        onChange={(e) => setBundleSearch(e.target.value)}
+                        className="pl-8"
+                      />
+                    </div>
+                    
+                    {filteredBundles.map((bundle) => (
                       <div key={bundle.id} className="p-3 border rounded-lg flex justify-between items-start">
                         <div>
                           <h4 className="font-medium">{bundle.name}</h4>
