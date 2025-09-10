@@ -58,8 +58,7 @@ export default function Shop() {
       const { data, error } = await supabase
         .from('shop_items')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(12); // Afficher seulement les 12 derniers produits ajoutés
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -146,7 +145,27 @@ export default function Shop() {
 
         {/* Category Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          {PREDEFINED_CATEGORIES.map((cat) => {
+          {PREDEFINED_CATEGORIES.filter(cat => {
+            // Afficher seulement les catégories qui ont des produits
+            const categoryItems = filteredItems.filter(item => 
+              item.categories?.includes(cat.id) || 
+              (cat.id === 'livres' && item.category === 'livre') ||
+              (cat.id === 'produits-derives' && item.category === 'produit dérivé') ||
+              (cat.id === 'packs' && item.category === 'pack') ||
+              (cat.id === 'accessoires' && item.category === 'accessoire') ||
+              (cat.id === 'vetements' && item.category === 'vêtement')
+            );
+            return categoryItems.length > 0;
+          }).map((cat) => {
+            const categoryItems = filteredItems.filter(item => 
+              item.categories?.includes(cat.id) || 
+              (cat.id === 'livres' && item.category === 'livre') ||
+              (cat.id === 'produits-derives' && item.category === 'produit dérivé') ||
+              (cat.id === 'packs' && item.category === 'pack') ||
+              (cat.id === 'accessoires' && item.category === 'accessoire') ||
+              (cat.id === 'vetements' && item.category === 'vêtement')
+            );
+            
             return (
               <Button
                 key={cat.id}
@@ -157,96 +176,129 @@ export default function Shop() {
                 <span className="text-2xl">{cat.icon}</span>
                 <span className="text-sm font-medium cursor-feather">{cat.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  Voir la catégorie
+                  {categoryItems.length} produit{categoryItems.length > 1 ? 's' : ''}
                 </span>
               </Button>
             );
           })}
         </div>
 
-        {/* Latest Products */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
-            Derniers produits ajoutés
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {filteredItems.map((item) => (
-              <Card 
-                key={item.id} 
-                className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
-                onClick={() => handleItemClick(item)}
-              >
-                <CardHeader className="p-0">
-                  <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2 right-2 flex flex-col gap-1">
-                      {item.is_on_sale && (
-                        <Badge className="bg-red-600 text-white">
-                          Soldé
-                        </Badge>
-                      )}
-                      {item.is_temporary && (
-                        <Badge className="bg-orange-600 text-white">
-                          Temporaire
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-3">
-                  <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                    {item.name}
-                  </CardTitle>
-                  
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex flex-col">
-                      {item.is_on_sale && item.sale_price ? (
-                        <>
-                          <span className="text-xs text-muted-foreground line-through opacity-60">
-                            {item.price.toFixed(2)}€
-                          </span>
-                          <span className="text-lg font-bold text-red-600">
-                            {item.sale_price.toFixed(2)}€
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-lg font-bold text-primary">
-                          {item.price.toFixed(2)}€
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Coins className="h-3 w-3 mr-1" />
-                      <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-muted-foreground">
-                      {item.seller}
-                    </span>
-                  </div>
-
-                  <Button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAddToCart(item);
-                    }}
-                    size="sm"
-                    className="w-full text-xs"
+        {/* Products by Categories */}
+        {PREDEFINED_CATEGORIES.filter(categoryObj => {
+          // Afficher seulement les catégories qui ont des produits
+          const categoryItems = filteredItems.filter(item => {
+            return (item.categories && item.categories.includes(categoryObj.id)) || 
+                   (categoryObj.id === 'livres' && item.category === 'livre') ||
+                   (categoryObj.id === 'produits-derives' && item.category === 'produit dérivé') ||
+                   (categoryObj.id === 'packs' && item.category === 'pack') ||
+                   (categoryObj.id === 'accessoires' && item.category === 'accessoire') ||
+                   (categoryObj.id === 'vetements' && item.category === 'vêtement');
+          });
+          return categoryItems.length > 0;
+        }).map((categoryObj) => {
+          const categoryItems = filteredItems.filter(item => {
+            return (item.categories && item.categories.includes(categoryObj.id)) || 
+                   (categoryObj.id === 'livres' && item.category === 'livre') ||
+                   (categoryObj.id === 'produits-derives' && item.category === 'produit dérivé') ||
+                   (categoryObj.id === 'packs' && item.category === 'pack') ||
+                   (categoryObj.id === 'accessoires' && item.category === 'accessoire') ||
+                   (categoryObj.id === 'vetements' && item.category === 'vêtement');
+          }).slice(0, 6); // Prendre seulement les 6 derniers produits de cette catégorie
+          
+          return (
+            <div key={categoryObj.id} className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-primary border-b border-border pb-2 capitalize">
+                  {categoryObj.name}
+                </h2>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/shop/category/${categoryObj.id}`)}
+                  className="cursor-feather"
+                >
+                  Voir tout
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                {categoryItems.map((item) => (
+                  <Card 
+                    key={item.id} 
+                    className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
+                    onClick={() => handleItemClick(item)}
                   >
-                    <ShoppingCart className="h-3 w-3 mr-1" />
-                    Ajouter au panier
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+                    <CardHeader className="p-0">
+                      <div className="aspect-square relative overflow-hidden rounded-t-lg">
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute top-2 right-2 flex flex-col gap-1">
+                          {item.is_on_sale && (
+                            <Badge className="bg-red-600 text-white">
+                              Soldé
+                            </Badge>
+                          )}
+                          {item.is_temporary && (
+                            <Badge className="bg-orange-600 text-white">
+                              Temporaire
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-3">
+                      <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                        {item.name}
+                      </CardTitle>
+                      
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col">
+                          {item.is_on_sale && item.sale_price ? (
+                            <>
+                              <span className="text-xs text-muted-foreground line-through opacity-60">
+                                {item.price.toFixed(2)}€
+                              </span>
+                              <span className="text-lg font-bold text-red-600">
+                                {item.sale_price.toFixed(2)}€
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-lg font-bold text-primary">
+                              {item.price.toFixed(2)}€
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Coins className="h-3 w-3 mr-1" />
+                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-muted-foreground">
+                          {item.seller}
+                        </span>
+                      </div>
+
+                      <Button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(item);
+                        }}
+                        size="sm"
+                        className="w-full text-xs"
+                      >
+                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        Ajouter au panier
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          );
+        })}
 
         {filteredItems.length === 0 && (
           <div className="text-center py-20">
