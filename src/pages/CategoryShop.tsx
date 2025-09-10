@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ShoppingCart, Search } from 'lucide-react';
+import ProductModal from '@/components/ProductModal';
 
 interface ShopItem {
   id: string;
@@ -43,6 +44,8 @@ export default function CategoryShop() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -128,6 +131,11 @@ export default function CategoryShop() {
       title: 'Ajouté au panier',
       description: `${item.name} a été ajouté à votre panier`,
     });
+  };
+
+  const handleItemClick = (item: ShopItem) => {
+    setSelectedItem(item);
+    setIsModalOpen(true);
   };
 
   const toggleTag = (tag: string) => {
@@ -218,8 +226,8 @@ export default function CategoryShop() {
               const currentPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
               
               return (
-                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative">
+                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                  <div className="relative" onClick={() => handleItemClick(item)}>
                     <img
                       src={item.image_url}
                       alt={item.name}
@@ -231,15 +239,15 @@ export default function CategoryShop() {
                       </div>
                     )}
                   </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{item.name}</CardTitle>
-                    <CardDescription className="text-sm line-clamp-2">
+                  <CardHeader className="pb-2" onClick={() => handleItemClick(item)}>
+                    <CardTitle className="text-lg cursor-pointer">{item.name}</CardTitle>
+                    <CardDescription className="text-sm line-clamp-2 cursor-pointer">
                       {item.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-3" onClick={() => handleItemClick(item)}>
+                      <div className="flex flex-col cursor-pointer">
                         <span className="text-xl font-bold text-primary">
                           {currentPrice.toFixed(2)} €
                         </span>
@@ -249,7 +257,7 @@ export default function CategoryShop() {
                           </span>
                         )}
                       </div>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground cursor-pointer">
                         par {item.seller}
                       </span>
                     </div>
@@ -283,6 +291,12 @@ export default function CategoryShop() {
           </div>
         )}
       </div>
+
+      <ProductModal 
+        item={selectedItem}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }
