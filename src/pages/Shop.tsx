@@ -40,8 +40,6 @@ export default function Shop() {
   const [filteredItems, setFilteredItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
@@ -53,34 +51,19 @@ export default function Shop() {
 
   useEffect(() => {
     filterItems();
-  }, [items, searchTerm, selectedCategory]);
+  }, [items, searchTerm]);
 
   const fetchItems = async () => {
     try {
       const { data, error } = await supabase
         .from('shop_items')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(12); // Afficher seulement les 12 derniers produits ajoutés
 
       if (error) throw error;
 
       setItems(data || []);
-      
-      // Extract unique categories from both category field and categories array
-      const allCategories = new Set<string>();
-      (data || []).forEach(item => {
-        if (item.categories && Array.isArray(item.categories)) {
-          item.categories.forEach((cat: string) => allCategories.add(cat));
-        }
-        if (item.category) {
-          allCategories.add(item.category);
-        }
-      });
-      
-      // Add predefined categories that might not be in use yet
-      PREDEFINED_CATEGORIES.forEach(cat => allCategories.add(cat.name));
-      
-      setAvailableCategories(Array.from(allCategories).sort());
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -102,15 +85,6 @@ export default function Shop() {
         (item.categories && item.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()))) ||
         (item.tags && item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       );
-    }
-
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter(item => {
-        // Check both the categories array and the single category field for backward compatibility
-        const hasCategory = (item.categories && item.categories.includes(selectedCategory)) || 
-                           item.category === selectedCategory;
-        return hasCategory;
-      });
     }
 
     setFilteredItems(filtered);
@@ -173,15 +147,6 @@ export default function Shop() {
         {/* Category Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
           {PREDEFINED_CATEGORIES.map((cat) => {
-            const categoryItems = filteredItems.filter(item => 
-              item.categories?.includes(cat.id) || 
-              (cat.id === 'livres' && item.category === 'livre') ||
-              (cat.id === 'produits-derives' && item.category === 'produit dérivé') ||
-              (cat.id === 'packs' && item.category === 'pack') ||
-              (cat.id === 'accessoires' && item.category === 'accessoire') ||
-              (cat.id === 'vetements' && item.category === 'vêtement')
-            );
-            
             return (
               <Button
                 key={cat.id}
@@ -192,207 +157,96 @@ export default function Shop() {
                 <span className="text-2xl">{cat.icon}</span>
                 <span className="text-sm font-medium cursor-feather">{cat.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {categoryItems.length} produit{categoryItems.length > 1 ? 's' : ''}
+                  Voir la catégorie
                 </span>
               </Button>
             );
           })}
         </div>
 
-        {/* Items Grid by Categories */}
-        {PREDEFINED_CATEGORIES.map((categoryObj) => {
-          const categoryItems = filteredItems.filter(item => {
-            // Check both the categories array and the single category field for backward compatibility
-            return (item.categories && item.categories.includes(categoryObj.id)) || 
-                   (categoryObj.id === 'livres' && item.category === 'livre') ||
-                   (categoryObj.id === 'produits-derives' && item.category === 'produit dérivé') ||
-                   (categoryObj.id === 'packs' && item.category === 'pack') ||
-                   (categoryObj.id === 'accessoires' && item.category === 'accessoire') ||
-                   (categoryObj.id === 'vetements' && item.category === 'vêtement');
-          });
-          
-          if (categoryItems.length === 0) return null;
-          
-          return (
-            <div key={categoryObj.id} className="space-y-6">
-              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2 capitalize">
-                {categoryObj.name}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {categoryItems.map((item) => (
-                  <Card 
-                    key={item.id} 
-                    className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
-                    onClick={() => handleItemClick(item)}
-                  >
-                    <CardHeader className="p-0">
-                      <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute top-2 right-2 flex flex-col gap-1">
-                          {item.is_on_sale && (
-                            <Badge className="bg-red-600 text-white">
-                              Soldé
-                            </Badge>
-                          )}
-                          {item.is_temporary && (
-                            <Badge className="bg-orange-600 text-white">
-                              Temporaire
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-3">
-                      <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                        {item.name}
-                      </CardTitle>
-                      
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex flex-col">
-                          {item.is_on_sale && item.sale_price ? (
-                            <>
-                              <span className="text-xs text-muted-foreground line-through opacity-60">
-                                {item.price.toFixed(2)}€
-                              </span>
-                              <span className="text-lg font-bold text-red-600">
-                                {item.sale_price.toFixed(2)}€
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-lg font-bold text-primary">
-                              {item.price.toFixed(2)}€
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Coins className="h-3 w-3 mr-1" />
-                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs text-muted-foreground">
-                          {item.seller}
+        {/* Latest Products */}
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
+            Derniers produits ajoutés
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            {filteredItems.map((item) => (
+              <Card 
+                key={item.id} 
+                className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
+                onClick={() => handleItemClick(item)}
+              >
+                <CardHeader className="p-0">
+                  <div className="aspect-square relative overflow-hidden rounded-t-lg">
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      {item.is_on_sale && (
+                        <Badge className="bg-red-600 text-white">
+                          Soldé
+                        </Badge>
+                      )}
+                      {item.is_temporary && (
+                        <Badge className="bg-orange-600 text-white">
+                          Temporaire
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-3">
+                  <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                    {item.name}
+                  </CardTitle>
+                  
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col">
+                      {item.is_on_sale && item.sale_price ? (
+                        <>
+                          <span className="text-xs text-muted-foreground line-through opacity-60">
+                            {item.price.toFixed(2)}€
+                          </span>
+                          <span className="text-lg font-bold text-red-600">
+                            {item.sale_price.toFixed(2)}€
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold text-primary">
+                          {item.price.toFixed(2)}€
                         </span>
-                      </div>
+                      )}
+                    </div>
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Coins className="h-3 w-3 mr-1" />
+                      <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
+                    </div>
+                  </div>
 
-                      <Button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(item);
-                        }}
-                        size="sm"
-                        className="w-full text-xs"
-                      >
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        Ajouter au panier
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs text-muted-foreground">
+                      {item.seller}
+                    </span>
+                  </div>
 
-        {/* Items without categories */}
-        {(() => {
-          const itemsWithoutCategories = filteredItems.filter(item => {
-            return (!item.categories || item.categories.length === 0) && 
-                   (!item.category || !PREDEFINED_CATEGORIES.map(c => c.id).includes(item.category));
-          });
-          
-          if (itemsWithoutCategories.length === 0) return null;
-          
-          return (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-primary border-b border-border pb-2">
-                Sans catégorie
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {itemsWithoutCategories.map((item) => (
-                  <Card 
-                    key={item.id} 
-                    className="group hover:shadow-lg transition-all duration-300 border-border bg-card/50 backdrop-blur-sm cursor-pointer"
-                    onClick={() => handleItemClick(item)}
+                  <Button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddToCart(item);
+                    }}
+                    size="sm"
+                    className="w-full text-xs"
                   >
-                    <CardHeader className="p-0">
-                      <div className="aspect-square relative overflow-hidden rounded-t-lg">
-                         <img
-                           src={item.image_url}
-                           alt={item.name}
-                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                         />
-                        <div className="absolute top-2 right-2 flex flex-col gap-1">
-                          {item.is_on_sale && (
-                            <Badge className="bg-red-600 text-white">
-                              Soldé
-                            </Badge>
-                          )}
-                          {item.is_temporary && (
-                            <Badge className="bg-orange-600 text-white">
-                              Temporaire
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-3">
-                      <CardTitle className="text-sm mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                        {item.name}
-                      </CardTitle>
-                      
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex flex-col">
-                          {item.is_on_sale && item.sale_price ? (
-                            <>
-                              <span className="text-xs text-muted-foreground line-through opacity-60">
-                                {item.price.toFixed(2)}€
-                              </span>
-                              <span className="text-lg font-bold text-red-600">
-                                {item.sale_price.toFixed(2)}€
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-lg font-bold text-primary">
-                              {item.price.toFixed(2)}€
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Coins className="h-3 w-3 mr-1" />
-                          <span>+{Math.floor(((item.is_on_sale && item.sale_price ? item.sale_price : item.price) * 0.05) * 166)}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs text-muted-foreground">
-                          {item.seller}
-                        </span>
-                      </div>
-
-                      <Button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddToCart(item);
-                        }}
-                        size="sm"
-                        className="w-full text-xs"
-                      >
-                        <ShoppingCart className="h-3 w-3 mr-1" />
-                        Ajouter au panier
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
+                    <ShoppingCart className="h-3 w-3 mr-1" />
+                    Ajouter au panier
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
 
         {filteredItems.length === 0 && (
           <div className="text-center py-20">
