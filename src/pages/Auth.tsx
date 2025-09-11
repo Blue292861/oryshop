@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Crown, Mail, Lock, User, MapPin, Building } from "lucide-react";
+import { Crown, Mail, Lock, User, MapPin, Building, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -37,6 +38,23 @@ export default function Auth() {
     try {
       // Sanitize form data
       const sanitizedData = sanitizeObject(formData);
+      
+      if (isResetPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(sanitizedData.email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        toast({
+          title: "Email de réinitialisation envoyé !",
+          description: "Vérifiez votre boîte email pour réinitialiser votre mot de passe.",
+        });
+        setIsResetPassword(false);
+        return;
+      }
       
       if (isSignUp) {
         // Validate form data for sign up
@@ -139,6 +157,32 @@ export default function Auth() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const getPasswordCriteria = () => {
+    const password = formData.password;
+    return [
+      { 
+        text: "Au moins 12 caractères", 
+        met: password.length >= 12 
+      },
+      { 
+        text: "Au moins 1 majuscule", 
+        met: /[A-Z]/.test(password) 
+      },
+      { 
+        text: "Au moins 1 minuscule", 
+        met: /[a-z]/.test(password) 
+      },
+      { 
+        text: "Au moins 1 chiffre", 
+        met: /[0-9]/.test(password) 
+      },
+      { 
+        text: "Au moins 1 caractère spécial", 
+        met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) 
+      }
+    ];
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -154,12 +198,27 @@ export default function Auth() {
 
         <Card className="border-border bg-card/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle>{isSignUp ? "Créer un compte" : "Se connecter"}</CardTitle>
+            <CardTitle>
+              {isResetPassword 
+                ? "Réinitialiser le mot de passe" 
+                : isSignUp 
+                  ? "Créer un compte" 
+                  : "Se connecter"}
+            </CardTitle>
             <CardDescription>
-              {isSignUp 
-                ? "Rejoignez le royaume d'Oryshop" 
-                : "Accédez à votre compte marchand"}
+              {isResetPassword
+                ? "Entrez votre email pour recevoir un lien de réinitialisation"
+                : isSignUp 
+                  ? "Rejoignez le royaume d'Oryshop" 
+                  : "Accédez à votre compte marchand"}
             </CardDescription>
+            {!isSignUp && !isResetPassword && (
+              <div className="mt-2 p-3 bg-muted/50 rounded-md">
+                <p className="text-sm text-muted-foreground">
+                  💡 Les identifiants de connexion sont les mêmes que pour Orydia
+                </p>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -195,9 +254,24 @@ export default function Auth() {
                   />
                 </div>
                 {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
+                {isSignUp && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Critères du mot de passe :</p>
+                    <div className="space-y-1">
+                      {getPasswordCriteria().map((criterion, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${criterion.met ? 'bg-green-500' : 'bg-muted'}`} />
+                          <span className={criterion.met ? 'text-green-600' : 'text-muted-foreground'}>
+                            {criterion.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {isSignUp && (
+              {isSignUp && !isResetPassword && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -298,25 +372,53 @@ export default function Auth() {
                 </>
               )}
 
+              {isResetPassword && (
+                <div className="flex items-center gap-2 text-center">
+                  <RotateCcw className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Un email de réinitialisation sera envoyé à cette adresse.
+                  </p>
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading 
                   ? "Chargement..." 
-                  : isSignUp 
-                    ? "Créer le compte" 
-                    : "Se connecter"}
+                  : isResetPassword
+                    ? "Envoyer l'email de réinitialisation"
+                    : isSignUp 
+                      ? "Créer le compte" 
+                      : "Se connecter"}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-primary hover:text-primary/80 underline text-sm"
-              >
-                {isSignUp 
-                  ? "Déjà un compte ? Se connecter" 
-                  : "Pas de compte ? S'inscrire"}
-              </button>
+            <div className="mt-6 space-y-3 text-center">
+              {!isResetPassword && (
+                <button
+                  type="button"
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-primary hover:text-primary/80 underline text-sm"
+                >
+                  {isSignUp 
+                    ? "Déjà un compte ? Se connecter" 
+                    : "Pas de compte ? S'inscrire"}
+                </button>
+              )}
+              
+              {!isSignUp && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsResetPassword(!isResetPassword);
+                      setIsSignUp(false);
+                    }}
+                    className="text-muted-foreground hover:text-foreground underline text-sm"
+                  >
+                    {isResetPassword ? "Retour à la connexion" : "Mot de passe oublié ?"}
+                  </button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
