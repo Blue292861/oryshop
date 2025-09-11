@@ -6,10 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Search, Filter, Coins } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Coins, LogIn } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import ProductModal from '@/components/ProductModal';
+import { Link } from 'react-router-dom';
 
 interface ShopItem {
   id: string;
@@ -43,6 +45,7 @@ export default function Shop() {
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -91,10 +94,24 @@ export default function Shop() {
 
   const handleAddToCart = (item: ShopItem) => {
     addToCart(item);
-    toast({
-      title: "Article ajouté !",
-      description: `${item.name} a été ajouté à votre panier`,
-    });
+    if (!user) {
+      toast({
+        title: "Article ajouté !",
+        description: `${item.name} a été ajouté à votre panier. Inscrivez-vous pour finaliser votre commande.`,
+        action: (
+          <Link to="/auth">
+            <Button variant="outline" size="sm">
+              S'inscrire
+            </Button>
+          </Link>
+        ),
+      });
+    } else {
+      toast({
+        title: "Article ajouté !",
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+    }
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -126,6 +143,19 @@ export default function Shop() {
           <p className="text-muted-foreground text-lg">
             Découvrez nos trésors médiévaux et gagnez des points Tensens !
           </p>
+          {!user && (
+            <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg max-w-md mx-auto">
+              <p className="text-sm text-muted-foreground mb-3">
+                💡 Parcourez librement nos produits ! Inscrivez-vous gratuitement pour passer commande.
+              </p>
+              <Link to="/auth">
+                <Button size="sm" className="gap-2">
+                  <LogIn className="h-4 w-4" />
+                  S'inscrire / Se connecter
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Search Bar */}

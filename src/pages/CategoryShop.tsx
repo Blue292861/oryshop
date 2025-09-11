@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, ShoppingCart, Search } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Search, LogIn } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import ProductModal from '@/components/ProductModal';
 
 interface ShopItem {
@@ -36,6 +38,7 @@ export default function CategoryShop() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { user } = useAuth();
   const { toast } = useToast();
   
   const [items, setItems] = useState<ShopItem[]>([]);
@@ -127,10 +130,24 @@ export default function CategoryShop() {
       tags: item.tags,
     };
     addToCart(cartItem);
-    toast({
-      title: 'Ajouté au panier',
-      description: `${item.name} a été ajouté à votre panier`,
-    });
+    if (!user) {
+      toast({
+        title: 'Ajouté au panier',
+        description: `${item.name} a été ajouté à votre panier. Inscrivez-vous pour finaliser votre commande.`,
+        action: (
+          <Link to="/auth">
+            <Button variant="outline" size="sm">
+              S'inscrire
+            </Button>
+          </Link>
+        ),
+      });
+    } else {
+      toast({
+        title: 'Ajouté au panier',
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+    }
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -170,6 +187,19 @@ export default function CategoryShop() {
             Retour à la boutique
           </Button>
           <h1 className="text-3xl font-bold text-foreground">{categoryName}</h1>
+          {!user && (
+            <div className="ml-auto p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">
+                💡 Inscrivez-vous pour commander
+              </p>
+              <Link to="/auth">
+                <Button size="sm" variant="outline" className="gap-2">
+                  <LogIn className="h-4 w-4" />
+                  S'inscrire
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Search Bar */}

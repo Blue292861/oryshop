@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
+import { Link } from "react-router-dom";
 
 export default function Cart() {
   const { 
@@ -21,6 +23,7 @@ export default function Cart() {
     getAppliedDiscounts,
     getTotalDiscount
   } = useCart();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -216,19 +219,51 @@ export default function Cart() {
                   <span>{getTotalWithShipping().toFixed(2)}€</span>
                 </div>
                 
-                <Button 
-                  onClick={handleCheckout}
-                  disabled={loading}
-                  className="w-full"
-                  size="lg"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {loading ? "Traitement..." : "Finaliser la commande"}
-                </Button>
-                
-                <p className="text-xs text-muted-foreground text-center">
-                  Vous serez redirigé vers Stripe pour le paiement sécurisé
-                </p>
+                {user ? (
+                  <>
+                    <Button 
+                      onClick={handleCheckout}
+                      disabled={loading}
+                      className="w-full"
+                      size="lg"
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      {loading ? "Traitement..." : "Finaliser la commande"}
+                    </Button>
+                    
+                    <p className="text-xs text-muted-foreground text-center">
+                      Vous serez redirigé vers Stripe pour le paiement sécurisé
+                    </p>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg text-center">
+                      <h3 className="font-semibold mb-2">Finalisez votre commande</h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Créez votre compte gratuit pour passer commande et profiter de tous nos avantages !
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link to="/auth" className="block">
+                        <Button variant="outline" className="w-full gap-2">
+                          <LogIn className="h-4 w-4" />
+                          Se connecter
+                        </Button>
+                      </Link>
+                      <Link to="/auth" className="block">
+                        <Button className="w-full gap-2">
+                          <UserPlus className="h-4 w-4" />
+                          S'inscrire
+                        </Button>
+                      </Link>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground text-center">
+                      Vos articles resteront dans votre panier après inscription
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
