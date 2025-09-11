@@ -12,6 +12,7 @@ import SplashScreen from "@/components/SplashScreen";
 
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
+const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Cart = lazy(() => import("./pages/Cart"));
@@ -49,6 +50,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/email-confirmation" element={<EmailConfirmation />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/shop/category/:category" element={<CategoryShop />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />

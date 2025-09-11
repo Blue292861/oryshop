@@ -41,7 +41,7 @@ export default function Auth() {
       
       if (isResetPassword) {
         const { error } = await supabase.auth.resetPasswordForEmail(sanitizedData.email, {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${window.location.origin}/email-confirmation`,
         });
 
         if (error) {
@@ -73,7 +73,7 @@ export default function Auth() {
               postal_code: validatedData.postalCode,
               country: validatedData.country,
             },
-            emailRedirectTo: `${window.location.origin}/`
+            emailRedirectTo: `${window.location.origin}/email-confirmation`
           }
         });
 
