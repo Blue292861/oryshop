@@ -224,7 +224,7 @@ export default function Cart() {
                     <Button 
                       onClick={handleCheckout}
                       disabled={loading}
-                      className="w-full"
+                      className="w-full cursor-coin-pouch"
                       size="lg"
                     >
                       <CreditCard className="h-4 w-4 mr-2" />

@@ -189,7 +189,7 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
             <Button 
               onClick={handleAddToCart}
               size="lg"
-              className="w-full"
+              className="w-full cursor-coin-pouch"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
               Ajouter au panier

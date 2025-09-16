@@ -317,7 +317,7 @@ export default function Shop() {
                           handleAddToCart(item);
                         }}
                         size="sm"
-                        className="w-full text-xs"
+                        className="w-full text-xs cursor-coin-pouch"
                       >
                         <ShoppingCart className="h-3 w-3 mr-1" />
                         Ajouter au panier

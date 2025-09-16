@@ -121,7 +121,12 @@ All colors MUST be HSL.
 @layer utilities {
   /* Custom cursor for clickable elements */
   .cursor-feather {
-    cursor: url('/src/assets/feather-icon.png') 12 12, pointer;
+    cursor: url('/assets/feather-cursor.png') 12 12, pointer;
+  }
+  
+  /* Custom cursor for payment buttons */
+  .cursor-coin-pouch {
+    cursor: url('/assets/coin-pouch-cursor.png') 12 12, pointer !important;
   }
   
   /* Apply feather cursor to clickable elements */

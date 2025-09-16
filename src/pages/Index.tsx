@@ -214,7 +214,7 @@ export default function Index() {
 
                         <Button 
                           onClick={() => handlePurchase(item)}
-                          className="w-full"
+                          className="w-full cursor-coin-pouch"
                           size="sm"
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
