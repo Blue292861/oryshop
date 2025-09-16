@@ -35,7 +35,7 @@ export const Layout = ({ children }: LayoutProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -132,16 +132,39 @@ export const Layout = ({ children }: LayoutProps) => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 pb-20">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/30 mt-20">
-        <div className="container mx-auto px-4 py-8 text-center">
-          <p className="text-muted-foreground">
-            © 2024 Oryshop - Boutique médiévale fantastique
-          </p>
+      {/* Fixed Footer */}
+      <footer className="fixed bottom-0 left-0 right-0 border-t border-border bg-card/80 backdrop-blur-sm z-40">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-center">
+            <p className="text-xs text-muted-foreground">
+              © 2024 Oryshop - Boutique médiévale fantastique
+            </p>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <a 
+                href="/documents/CGV_et_CGU.pdf" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline"
+                download
+              >
+                Conditions générales de vente et d'utilisation
+              </a>
+              <span className="text-muted-foreground">•</span>
+              <a 
+                href="/documents/Mentions_légales.pdf" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline"
+                download
+              >
+                Mentions légales
+              </a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

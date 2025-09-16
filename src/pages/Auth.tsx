@@ -390,6 +390,33 @@ export default function Auth() {
                       ? "Créer le compte" 
                       : "Se connecter"}
               </Button>
+
+              {isSignUp && (
+                <div className="text-center mt-4">
+                  <p className="text-xs text-muted-foreground">
+                    En créant un compte, j'accepte les{" "}
+                    <a 
+                      href="/documents/CGV_et_CGU.pdf" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 underline"
+                      download
+                    >
+                      conditions générales de vente et d'utilisation
+                    </a>{" "}
+                    et je reconnais avoir pris connaissance des{" "}
+                    <a 
+                      href="/documents/Mentions_légales.pdf" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 underline"
+                      download
+                    >
+                      mentions légales
+                    </a>
+                  </p>
+                </div>
+              )}
             </form>
 
             <div className="mt-6 space-y-3 text-center">
