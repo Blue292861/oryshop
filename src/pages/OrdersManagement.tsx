@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { format } from "date-fns";
-import { Spinner } from "@/components/ui/spinner"; // Assuming you have a spinner component
 
 interface Order {
   id: string;
@@ -258,3 +257,112 @@ export default function OrdersManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {orders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Aucune commande trouvée
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Produit</TableHead>
+                    <TableHead>Prix</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {order.item_name}
+                      </TableCell>
+                      <TableCell>
+                        {order.price.toFixed(2)} €
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(order.status)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => fetchUserProfile(order.user_id)}
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Fiche Utilisateur</DialogTitle>
+                                <DialogDescription>
+                                  Informations détaillées sur le client.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="py-4">
+                                {isUserLoading ? (
+                                  <div className="flex justify-center items-center h-24">
+                                    <RefreshCw className="h-6 w-6 animate-spin text-gray-500" />
+                                  </div>
+                                ) : selectedUser ? (
+                                  <ul className="space-y-2">
+                                    <li><strong>Nom :</strong> {selectedUser.first_name} {selectedUser.last_name}</li>
+                                    <li><strong>Adresse :</strong> {selectedUser.street_address}</li>
+                                    <li><strong>Email :</strong> {selectedUser.email}</li>
+                                  </ul>
+                                ) : (
+                                  <div className="text-center text-muted-foreground">
+                                    Informations utilisateur non trouvées.
+                                  </div>
+                                )}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          {order.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => updateOrderStatus(order.id, 'completed')}
+                              disabled={updating === order.id}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {updating === order.id ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                          {order.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateOrderStatus(order.id, 'pending')}
+                              disabled={updating === order.id}
+                            >
+                              {updating === order.id ? (
+                                <RefreshCw className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <X className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
+  );
+}
