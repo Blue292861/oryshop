@@ -19,6 +19,7 @@ const Cart = lazy(() => import("./pages/Cart"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const Admin = lazy(() => import("./pages/Admin"));
 const SalesExport = lazy(() => import("./pages/SalesExport"));
+const OrdersManagement = lazy(() => import("./pages/OrdersManagement"));
 const CategoryShop = lazy(() => import("./pages/CategoryShop"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -86,6 +87,16 @@ const App = () => {
                       <ProtectedRoute>
                         <AdminRoute>
                           <SalesExport />
+                        </AdminRoute>
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/admin/orders" 
+                    element={
+                      <ProtectedRoute>
+                        <AdminRoute>
+                          <OrdersManagement />
                         </AdminRoute>
                       </ProtectedRoute>
                     } 

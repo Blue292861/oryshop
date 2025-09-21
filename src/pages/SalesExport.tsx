@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
@@ -20,6 +21,7 @@ export default function SalesExport() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const [includePending, setIncludePending] = useState(false);
   const { toast } = useToast();
 
   const exportSales = async () => {
@@ -58,12 +60,19 @@ export default function SalesExport() {
           break;
       }
 
-      const { data: orders, error } = await supabase
+      let query = supabase
         .from('orders')
         .select('*')
         .gte('created_at', startDateStr + 'T00:00:00')
-        .lte('created_at', endDateStr + 'T23:59:59')
-        .eq('status', 'completed');
+        .lte('created_at', endDateStr + 'T23:59:59');
+      
+      if (!includePending) {
+        query = query.eq('status', 'completed');
+      } else {
+        query = query.in('status', ['completed', 'pending']);
+      }
+      
+      const { data: orders, error } = await query;
       
       if (error) throw error;
 
@@ -90,6 +99,7 @@ export default function SalesExport() {
           'Catégorie': shopItem?.category || 'N/A',
           'Identifiant produit': shopItem?.product_id || 'N/A',
           'Prix (€)': order.price.toFixed(2),
+          'Statut': order.status === 'completed' ? 'Complétée' : 'En attente',
           'ID Commande': order.id,
         };
       });
@@ -198,7 +208,18 @@ export default function SalesExport() {
               )}
             </div>
 
-            <Button 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="include-pending"
+                checked={includePending}
+                onCheckedChange={(checked) => setIncludePending(checked as boolean)}
+              />
+              <Label htmlFor="include-pending" className="text-sm">
+                Inclure les commandes en attente (non validées par Stripe)
+              </Label>
+            </div>
+
+            <Button
               onClick={exportSales} 
               disabled={isExporting}
               className="w-full"

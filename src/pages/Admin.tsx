@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -192,11 +192,11 @@ export default function Admin() {
         .from('shop_items')
         .select('*', { count: 'exact', head: true });
 
-      // Get total revenue
+      // Get total revenue (including pending orders temporarily)
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('price')
-        .eq('status', 'completed');
+        .select('price, status')
+        .in('status', ['completed', 'pending']);
 
       const totalRevenue = ordersData?.reduce((sum, order) => sum + order.price, 0) || 0;
 
@@ -629,6 +629,15 @@ export default function Admin() {
             >
               <FileSpreadsheet className="h-4 w-4" />
               Export des ventes
+            </Button>
+            
+            <Button
+              onClick={() => navigate('/admin/orders')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Gestion des commandes
             </Button>
             
             <Dialog open={bundleDialogOpen} onOpenChange={setBundleDialogOpen}>
