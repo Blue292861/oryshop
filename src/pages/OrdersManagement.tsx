@@ -23,8 +23,7 @@ interface Order {
 interface UserProfile {
   first_name: string;
   last_name: string;
-  street_address: string;
-  email: string;
+  address: string;
 }
 
 export default function OrdersManagement() {
@@ -134,7 +133,7 @@ export default function OrdersManagement() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, street_address, email')
+        .select('first_name, last_name, address')
         .eq('id', userId)
         .single();
       
@@ -314,8 +313,7 @@ export default function OrdersManagement() {
                                 ) : selectedUser ? (
                                   <ul className="space-y-2">
                                     <li><strong>Nom :</strong> {selectedUser.first_name} {selectedUser.last_name}</li>
-                                    <li><strong>Adresse :</strong> {selectedUser.street_address}</li>
-                                    <li><strong>Email :</strong> {selectedUser.email}</li>
+                                    <li><strong>Adresse :</strong> {selectedUser.address}</li>
                                   </ul>
                                 ) : (
                                   <div className="text-center text-muted-foreground">
