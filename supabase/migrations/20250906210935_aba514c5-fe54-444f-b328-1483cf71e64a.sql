@@ -36,6 +36,11 @@ CREATE POLICY "Users can view own profile only" ON public.profiles
 FOR SELECT 
 USING (auth.uid() = id);
 
+-- CORRECTION: Add policy to allow admins to view all profiles
+CREATE POLICY "Admins can view all profiles" ON public.profiles
+FOR SELECT
+USING (user_has_role(auth.uid(), 'admin'::app_role));
+
 -- 3. Fix security_audit_log to prevent tampering
 -- Only system functions should be able to insert, users should never directly insert
 DROP POLICY IF EXISTS "Only system can log rate limits" ON public.rate_limit_log;
