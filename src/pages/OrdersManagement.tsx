@@ -135,10 +135,11 @@ export default function OrdersManagement() {
         .from('profiles')
         .select('first_name, last_name, street_address')
         .eq('id', userId)
-        .single();
+        .limit(1); // Utilisez .limit(1) au lieu de .single()
       
       if (error) throw error;
-      setSelectedUser(data);
+      // Vérifiez si des données ont été trouvées avant de les définir
+      setSelectedUser(data?.[0] || null); 
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -312,8 +313,8 @@ export default function OrdersManagement() {
                                   </div>
                                 ) : selectedUser ? (
                                   <ul className="space-y-2">
-                                    <li><strong>Nom :</strong> {selectedUser.first_name} {selectedUser.last_name}</li>
-                                    <li><strong>Adresse :</strong> {selectedUser.street_address}</li>
+                                    <li><strong>Nom :</strong> {selectedUser.first_name || 'N/A'} {selectedUser.last_name || 'N/A'}</li>
+                                    <li><strong>Adresse :</strong> {selectedUser.street_address || 'N/A'}</li>
                                   </ul>
                                 ) : (
                                   <div className="text-center text-muted-foreground">
