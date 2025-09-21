@@ -239,39 +239,41 @@ export default function Auth() {
                   {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
-                    required
-                  />
-                </div>
-                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
-                {isSignUp && (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Critères du mot de passe :</p>
-                    <div className="space-y-1">
-                      {getPasswordCriteria().map((criterion, index) => (
-                        <div key={index} className="flex items-center gap-2 text-sm">
-                          <div className={`w-2 h-2 rounded-full ${criterion.met ? 'bg-green-500' : 'bg-muted'}`} />
-                          <span className={criterion.met ? 'text-green-600' : 'text-muted-foreground'}>
-                            {criterion.text}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+              {!isResetPassword && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Mot de passe</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
+                      required
+                    />
                   </div>
-                )}
-              </div>
+                  {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
+                  {isSignUp && (
+                    <div className="mt-2 space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Critères du mot de passe :</p>
+                      <div className="space-y-1">
+                        {getPasswordCriteria().map((criterion, index) => (
+                          <div key={index} className="flex items-center gap-2 text-sm">
+                            <div className={`w-2 h-2 rounded-full ${criterion.met ? 'bg-green-500' : 'bg-muted'}`} />
+                            <span className={criterion.met ? 'text-green-600' : 'text-muted-foreground'}>
+                              {criterion.text}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {isSignUp && !isResetPassword && (
+              {isSignUp && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -326,6 +328,7 @@ export default function Auth() {
                         value={formData.streetAddress}
                         onChange={(e) => handleInputChange('streetAddress', e.target.value)}
                         className={`pl-10 ${errors.streetAddress ? 'border-destructive' : ''}`}
+                        required
                       />
                     </div>
                     {errors.streetAddress && <p className="text-sm text-destructive mt-1">{errors.streetAddress}</p>}
@@ -342,6 +345,7 @@ export default function Auth() {
                           value={formData.city}
                           onChange={(e) => handleInputChange('city', e.target.value)}
                           className={`pl-10 ${errors.city ? 'border-destructive' : ''}`}
+                          required
                         />
                       </div>
                       {errors.city && <p className="text-sm text-destructive mt-1">{errors.city}</p>}
@@ -354,6 +358,7 @@ export default function Auth() {
                         value={formData.postalCode}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                         className={errors.postalCode ? 'border-destructive' : ''}
+                        required
                       />
                       {errors.postalCode && <p className="text-sm text-destructive mt-1">{errors.postalCode}</p>}
                     </div>
@@ -365,6 +370,7 @@ export default function Auth() {
                         value={formData.country}
                         onChange={(e) => handleInputChange('country', e.target.value)}
                         className={errors.country ? 'border-destructive' : ''}
+                        required
                       />
                       {errors.country && <p className="text-sm text-destructive mt-1">{errors.country}</p>}
                     </div>
