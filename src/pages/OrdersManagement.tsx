@@ -23,7 +23,7 @@ interface Order {
 interface UserProfile {
   first_name: string;
   last_name: string;
-  street_address: string;
+  address: string;
 }
 
 export default function OrdersManagement() {
@@ -133,12 +133,12 @@ export default function OrdersManagement() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, street_address')
+        .select('first_name, last_name, address')
         .eq('id', userId)
-        .limit(1); // Utilisez .limit(1) au lieu de .single()
+        .limit(1);
       
       if (error) throw error;
-      // Vérifiez si des données ont été trouvées avant de les définir
+
       setSelectedUser(data?.[0] || null); 
     } catch (error: any) {
       toast({
@@ -314,7 +314,7 @@ export default function OrdersManagement() {
                                 ) : selectedUser ? (
                                   <ul className="space-y-2">
                                     <li><strong>Nom :</strong> {selectedUser.first_name || 'N/A'} {selectedUser.last_name || 'N/A'}</li>
-                                    <li><strong>Adresse :</strong> {selectedUser.street_address || 'N/A'}</li>
+                                    <li><strong>Adresse :</strong> {selectedUser.address || 'N/A'}</li>
                                   </ul>
                                 ) : (
                                   <div className="text-center text-muted-foreground">
