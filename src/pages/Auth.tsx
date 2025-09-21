@@ -68,7 +68,7 @@ export default function Auth() {
               username: validatedData.username,
               first_name: validatedData.firstName,
               last_name: validatedData.lastName,
-              address: validatedData.streetAddress,
+              address: validatedData.streetAddress, // Correction ici
               city: validatedData.city,
               postal_code: validatedData.postalCode,
               country: validatedData.country,
@@ -239,41 +239,39 @@ export default function Auth() {
                   {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
               </div>
 
-              {!isResetPassword && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
-                      required
-                    />
-                  </div>
-                  {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
-                  {isSignUp && (
-                    <div className="mt-2 space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Critères du mot de passe :</p>
-                      <div className="space-y-1">
-                        {getPasswordCriteria().map((criterion, index) => (
-                          <div key={index} className="flex items-center gap-2 text-sm">
-                            <div className={`w-2 h-2 rounded-full ${criterion.met ? 'bg-green-500' : 'bg-muted'}`} />
-                            <span className={criterion.met ? 'text-green-600' : 'text-muted-foreground'}>
-                              {criterion.text}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
+                    required
+                  />
                 </div>
-              )}
+                {errors.password && <p className="text-sm text-destructive mt-1">{errors.password}</p>}
+                {isSignUp && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Critères du mot de passe :</p>
+                    <div className="space-y-1">
+                      {getPasswordCriteria().map((criterion, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm">
+                          <div className={`w-2 h-2 rounded-full ${criterion.met ? 'bg-green-500' : 'bg-muted'}`} />
+                          <span className={criterion.met ? 'text-green-600' : 'text-muted-foreground'}>
+                            {criterion.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {isSignUp && (
+              {isSignUp && !isResetPassword && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -319,11 +317,11 @@ export default function Auth() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="streetAddress">Adresse</Label>
+                    <Label htmlFor="address">Adresse</Label>
                     <div className="relative">
                       <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="streetAddress"
+                        id="address" // Correction ici
                         placeholder="123 Rue du Château"
                         value={formData.streetAddress}
                         onChange={(e) => handleInputChange('streetAddress', e.target.value)}
