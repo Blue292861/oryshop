@@ -68,7 +68,7 @@ export default function Auth() {
               username: validatedData.username,
               first_name: validatedData.firstName,
               last_name: validatedData.lastName,
-              street_address: validatedData.streetAddress,
+              address: validatedData.streetAddress,
               city: validatedData.city,
               postal_code: validatedData.postalCode,
               country: validatedData.country,
