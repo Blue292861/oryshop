@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Package, Check, X, AlertTriangle, RefreshCw } from "lucide-react";
+import { Package, Check, X, AlertTriangle, RefreshCw, Eye, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { format } from "date-fns";
+import { Spinner } from "@/components/ui/spinner"; // Assuming you have a spinner component
 
 interface Order {
   id: string;
@@ -20,10 +21,19 @@ interface Order {
   item_id: string;
 }
 
+interface UserProfile {
+  first_name: string;
+  last_name: string;
+  street_address: string;
+  email: string;
+}
+
 export default function OrdersManagement() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [isUserLoading, setIsUserLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -116,6 +126,29 @@ export default function OrdersManagement() {
         description: "Impossible de valider les commandes",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchUserProfile = async (userId: string) => {
+    setIsUserLoading(true);
+    setSelectedUser(null);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, street_address, email')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      setSelectedUser(data);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les informations de l'utilisateur.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUserLoading(false);
     }
   };
 
@@ -225,76 +258,3 @@ export default function OrdersManagement() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {orders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Aucune commande trouvée
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Produit</TableHead>
-                    <TableHead>Prix</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>
-                        {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm')}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {order.item_name}
-                      </TableCell>
-                      <TableCell>
-                        {order.price.toFixed(2)} €
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(order.status)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {order.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() => updateOrderStatus(order.id, 'completed')}
-                              disabled={updating === order.id}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              {updating === order.id ? (
-                                <RefreshCw className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Check className="h-3 w-3" />
-                              )}
-                            </Button>
-                          )}
-                          {order.status === 'completed' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateOrderStatus(order.id, 'pending')}
-                              disabled={updating === order.id}
-                            >
-                              {updating === order.id ? (
-                                <RefreshCw className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <X className="h-3 w-3" />
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </Layout>
-  );
-}
