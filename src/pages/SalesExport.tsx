@@ -76,12 +76,19 @@ export default function SalesExport() {
       
       if (error) throw error;
 
-      // Récupérer les informations des produits séparément
+      // Récupérer les informations des produits et des utilisateurs séparément
       const itemIds = orders?.map(order => order.item_id).filter(Boolean) || [];
+      const userIds = orders?.map(order => order.user_id).filter(Boolean) || [];
+
       const { data: shopItems } = await supabase
         .from('shop_items')
         .select('id, name, category, product_id')
         .in('id', itemIds);
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, street_address')
+        .in('id', userIds);
 
       if (!orders || orders.length === 0) {
         toast({
@@ -93,8 +100,11 @@ export default function SalesExport() {
 
       const exportData = orders.map(order => {
         const shopItem = shopItems?.find(item => item.id === order.item_id);
+        const userProfile = profiles?.find(profile => profile.id === order.user_id);
         return {
           'Date de vente': format(new Date(order.created_at), 'dd/MM/yyyy HH:mm'),
+          'Nom du client': userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : 'N/A',
+          'Adresse de livraison': userProfile?.street_address || 'N/A',
           'Nom du produit': order.item_name,
           'Catégorie': shopItem?.category || 'N/A',
           'Identifiant produit': shopItem?.product_id || 'N/A',
