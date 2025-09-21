@@ -15,7 +15,7 @@ interface Profile {
   first_name: string | null;
   last_name: string | null;
   avatar_url: string | null;
-  address: string | null;
+  street_address: string | null;
   city: string | null;
   postal_code: string | null;
   country: string | null;
@@ -69,7 +69,7 @@ export default function Profile() {
         first_name: data.first_name || null,
         last_name: data.last_name || null,
         avatar_url: data.avatar_url || null,
-        address: data.address || null,
+        street_address: data.street_address || null,
         city: data.city || null,
         postal_code: (data as any).postal_code || null,
         country: data.country || null,
@@ -142,7 +142,7 @@ export default function Profile() {
           username: editForm.username,
           first_name: editForm.first_name,
           last_name: editForm.last_name,
-          address: editForm.address,
+          street_address: editForm.street_address,
           city: editForm.city,
           postal_code: editForm.postal_code,
           country: editForm.country,
@@ -254,11 +254,11 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">Adresse</Label>
+                  <Label htmlFor="street_address">Adresse</Label>
                   <Input
-                    id="address"
-                    value={editing ? (editForm.address || '') : (profile?.address || '')}
-                    onChange={(e) => handleEditChange('address', e.target.value)}
+                    id="street_address"
+                    value={editing ? (editForm.street_address || '') : (profile?.street_address || '')}
+                    onChange={(e) => handleEditChange('street_address', e.target.value)}
                     disabled={!editing}
                   />
                 </div>
