@@ -61,6 +61,7 @@ export default function Shop() {
       const { data, error } = await supabase
         .from('shop_items')
         .select('*')
+        .not('shop_type', 'eq', 'internal')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

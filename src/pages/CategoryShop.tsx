@@ -63,7 +63,8 @@ export default function CategoryShop() {
       setLoading(true);
       const { data, error } = await supabase
         .from('shop_items')
-        .select('*');
+        .select('*')
+        .not('shop_type', 'eq', 'internal');
 
       if (error) throw error;
 

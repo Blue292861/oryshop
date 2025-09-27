@@ -87,7 +87,7 @@ export default function SalesExport() {
 
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, street_address')
+        .select('id, first_name, last_name, address')
         .in('id', userIds);
 
       if (!orders || orders.length === 0) {
@@ -104,7 +104,7 @@ export default function SalesExport() {
         return {
           'Date de vente': format(new Date(order.created_at), 'dd/MM/yyyy HH:mm'),
           'Nom du client': userProfile ? `${userProfile.first_name} ${userProfile.last_name}` : 'N/A',
-          'Adresse de livraison': userProfile?.street_address || 'N/A',
+          'Adresse de livraison': userProfile?.address || 'N/A',
           'Nom du produit': order.item_name,
           'Catégorie': shopItem?.category || 'N/A',
           'Identifiant produit': shopItem?.product_id || 'N/A',
