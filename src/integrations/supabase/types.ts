@@ -1391,6 +1391,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_pending_order: {
+        Args: {
+          p_item_id: string
+          p_item_name: string
+          p_price: number
+          p_user_id: string
+        }
+        Returns: string
+      }
       get_recommended_theme: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["ui_theme"]

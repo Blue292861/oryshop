@@ -228,16 +228,21 @@ serve(async (req) => {
       items_count: items.length
     });
 
-    // Create pending orders in database
+    // Create pending orders in database using secure SECURITY DEFINER function
+    console.log(`Creating ${items.length} pending orders for user ${user.id}`);
+    
     const orderPromises = items.map(async (item: any) => {
       const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
+      const totalPrice = finalPrice * item.quantity;
       
-      const { data, error } = await supabaseService.from("orders").insert({
-        user_id: user.id,
-        item_id: item.id,
-        item_name: item.name,
-        price: finalPrice * item.quantity,
-        status: "pending",
+      console.log(`Calling create_pending_order for item ${item.id}, user ${user.id}, price ${totalPrice}`);
+      
+      // Use the secure PostgreSQL function to create orders
+      const { data, error } = await supabaseService.rpc('create_pending_order', {
+        p_user_id: user.id,
+        p_item_id: item.id,
+        p_item_name: item.name,
+        p_price: totalPrice
       });
 
       if (error) {
@@ -245,14 +250,16 @@ serve(async (req) => {
         await logSecurityEvent(supabaseService, user.id, 'order_creation_failed', {
           item_id: item.id,
           item_name: item.name,
+          price: totalPrice,
           error_message: error.message,
           error_code: error.code,
-          error_details: error.details
+          error_details: error.details,
+          error_hint: error.hint
         }, 'error');
-        throw new Error(`Failed to create order: ${error.message}`);
+        throw new Error(`Échec de la création de commande: ${error.message || 'Erreur inconnue'}`);
       }
 
-      console.log(`Successfully created pending order for user ${user.id}, item ${item.id}`);
+      console.log(`Successfully created pending order ${data} for user ${user.id}, item ${item.id}`);
       return data;
     });
 

@@ -47,6 +47,7 @@ export default function Cart() {
       });
 
       if (error) {
+        console.error('Erreur lors de la création de la session de paiement:', error);
         throw new Error(error.message || 'Erreur lors de la création de la session de paiement');
       }
 
@@ -54,13 +55,27 @@ export default function Cart() {
         // Redirect to Stripe Checkout
         window.location.href = data.url;
       } else {
-        throw new Error('URL de paiement non reçue');
+        console.error('Aucune URL de paiement reçue:', data);
+        throw new Error('URL de paiement non reçue du serveur');
       }
       
     } catch (error: any) {
+      console.error('Erreur complète lors du checkout:', error);
+      
+      let errorMessage = "Une erreur est survenue lors de la commande. Veuillez réessayer.";
+      
+      // Provide more specific error messages
+      if (error.message?.includes('RLS') || error.message?.includes('row-level security')) {
+        errorMessage = "Erreur de sécurité. Veuillez vous reconnecter et réessayer.";
+      } else if (error.message?.includes('Rate limit')) {
+        errorMessage = "Trop de tentatives. Veuillez attendre quelques minutes avant de réessayer.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de la commande",
+        title: "Erreur de commande",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
