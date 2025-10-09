@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { Link } from "react-router-dom";
 
+// Home page component
+
 interface ShopItem {
   id: string;
   name: string;
