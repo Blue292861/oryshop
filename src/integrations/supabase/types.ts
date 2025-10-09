@@ -233,6 +233,7 @@ export type Database = {
           created_at: string
           description: string | null
           genre: string | null
+          genres: string[]
           id: string
           is_featured: boolean
           is_month_success: boolean
@@ -251,6 +252,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           genre?: string | null
+          genres?: string[]
           id?: string
           is_featured?: boolean
           is_month_success?: boolean
@@ -269,6 +271,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           genre?: string | null
+          genres?: string[]
           id?: string
           is_featured?: boolean
           is_month_success?: boolean
@@ -350,6 +353,7 @@ export type Database = {
           content: string
           cover_url: string
           created_at: string
+          genres: string[]
           has_chapters: boolean
           id: string
           is_adult_content: boolean
@@ -368,6 +372,7 @@ export type Database = {
           content: string
           cover_url: string
           created_at?: string
+          genres?: string[]
           has_chapters?: boolean
           id?: string
           is_adult_content?: boolean
@@ -386,6 +391,7 @@ export type Database = {
           content?: string
           cover_url?: string
           created_at?: string
+          genres?: string[]
           has_chapters?: boolean
           id?: string
           is_adult_content?: boolean
@@ -431,6 +437,42 @@ export type Database = {
           name?: string
           product_ids?: string[]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      epub_reading_progress: {
+        Row: {
+          book_id: string
+          created_at: string
+          current_page: number | null
+          id: string
+          location: string | null
+          progress: number | null
+          total_pages: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          current_page?: number | null
+          id?: string
+          location?: string | null
+          progress?: number | null
+          total_pages?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          current_page?: number | null
+          id?: string
+          location?: string | null
+          progress?: number | null
+          total_pages?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -667,34 +709,46 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          app_rating: number | null
           avatar_url: string | null
           city: string | null
           country: string | null
           first_name: string | null
+          has_rated_app: boolean | null
           id: string
           last_name: string | null
+          rated_at: string | null
+          tutorials_seen: string | null
           updated_at: string | null
           username: string | null
         }
         Insert: {
           address?: string | null
+          app_rating?: number | null
           avatar_url?: string | null
           city?: string | null
           country?: string | null
           first_name?: string | null
+          has_rated_app?: boolean | null
           id: string
           last_name?: string | null
+          rated_at?: string | null
+          tutorials_seen?: string | null
           updated_at?: string | null
           username?: string | null
         }
         Update: {
           address?: string | null
+          app_rating?: number | null
           avatar_url?: string | null
           city?: string | null
           country?: string | null
           first_name?: string | null
+          has_rated_app?: boolean | null
           id?: string
           last_name?: string | null
+          rated_at?: string | null
+          tutorials_seen?: string | null
           updated_at?: string | null
           username?: string | null
         }
@@ -801,6 +855,7 @@ export type Database = {
           required_level: number | null
           sale_price: number | null
           seller: string
+          shop_type: Database["public"]["Enums"]["shop_type"]
           tags: string[] | null
           updated_at: string
         }
@@ -823,6 +878,7 @@ export type Database = {
           required_level?: number | null
           sale_price?: number | null
           seller: string
+          shop_type?: Database["public"]["Enums"]["shop_type"]
           tags?: string[] | null
           updated_at?: string
         }
@@ -845,6 +901,7 @@ export type Database = {
           required_level?: number | null
           sale_price?: number | null
           seller?: string
+          shop_type?: Database["public"]["Enums"]["shop_type"]
           tags?: string[] | null
           updated_at?: string
         }
@@ -852,6 +909,9 @@ export type Database = {
       }
       subscribers: {
         Row: {
+          cancel_at_period_end: boolean | null
+          cancellation_date: string | null
+          cancelled_by_user: boolean | null
           created_at: string
           email: string
           id: string
@@ -863,6 +923,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          cancel_at_period_end?: boolean | null
+          cancellation_date?: string | null
+          cancelled_by_user?: boolean | null
           created_at?: string
           email: string
           id?: string
@@ -874,6 +937,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          cancel_at_period_end?: boolean | null
+          cancellation_date?: string | null
+          cancelled_by_user?: boolean | null
           created_at?: string
           email?: string
           id?: string
@@ -1321,6 +1387,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_orphaned_storage_files: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_recommended_theme: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["ui_theme"]
@@ -1361,6 +1431,12 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      search_user_emails: {
+        Args: { p_query: string }
+        Returns: {
+          email: string
+        }[]
+      }
       sync_user_level_info: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1383,6 +1459,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin"
+      shop_type: "internal" | "external"
       ui_theme:
         | "medieval_fantasy"
         | "science_fiction"
@@ -1518,6 +1595,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin"],
+      shop_type: ["internal", "external"],
       ui_theme: [
         "medieval_fantasy",
         "science_fiction",

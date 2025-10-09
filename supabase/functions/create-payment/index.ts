@@ -232,16 +232,32 @@ serve(async (req) => {
     const orderPromises = items.map(async (item: any) => {
       const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
       
-      return supabaseService.from("orders").insert({
+      const { data, error } = await supabaseService.from("orders").insert({
         user_id: user.id,
         item_id: item.id,
         item_name: item.name,
         price: finalPrice * item.quantity,
         status: "pending",
       });
+
+      if (error) {
+        console.error(`Failed to create order for item ${item.id}:`, error);
+        await logSecurityEvent(supabaseService, user.id, 'order_creation_failed', {
+          item_id: item.id,
+          item_name: item.name,
+          error_message: error.message,
+          error_code: error.code,
+          error_details: error.details
+        }, 'error');
+        throw new Error(`Failed to create order: ${error.message}`);
+      }
+
+      console.log(`Successfully created pending order for user ${user.id}, item ${item.id}`);
+      return data;
     });
 
-    await Promise.all(orderPromises);
+    const orderResults = await Promise.all(orderPromises);
+    console.log(`Created ${orderResults.length} pending orders for session ${session.id}`);
 
     console.log(`Created Stripe session ${session.id} for user ${user.id}`);
 
