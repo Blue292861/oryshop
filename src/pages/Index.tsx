@@ -73,18 +73,20 @@ export default function Index() {
       const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
       const tensensEarned = Math.floor((finalPrice * 0.05) * 166);
 
-      const { error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          item_id: item.id,
-          item_name: item.name,
-          price: finalPrice,
-          status: 'completed'
+      // Use the secure RPC function to create the order
+      const { data: orderId, error: orderError } = await supabase
+        .rpc('create_instant_order', {
+          p_item_id: item.id,
+          p_item_name: item.name,
+          p_price: finalPrice
         });
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Order creation error:', orderError);
+        throw new Error(`Impossible de créer la commande: ${orderError.message}`);
+      }
 
+      // Create points transaction
       const { error: pointsError } = await supabase
         .from('point_transactions')
         .insert({
@@ -95,7 +97,16 @@ export default function Index() {
           source_app: 'oryshop'
         });
 
-      if (pointsError) throw pointsError;
+      if (pointsError) {
+        console.error('Points transaction error:', pointsError);
+        // Don't throw error for points, order is already created
+        toast({
+          title: "Achat réussi mais...",
+          description: "Les points Tensens n'ont pas pu être crédités. Contactez le support.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Achat réussi !",
@@ -103,9 +114,10 @@ export default function Index() {
       });
 
     } catch (error: any) {
+      console.error('Purchase error:', error);
       toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de l'achat",
+        title: "Erreur lors de l'achat",
+        description: error.message || "Une erreur est survenue. Veuillez réessayer.",
         variant: "destructive",
       });
     }
