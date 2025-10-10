@@ -32,6 +32,7 @@ interface ShopItem {
   is_clothing?: boolean;
   available_sizes?: string[];
   additional_images?: string[];
+  shop_type?: 'internal' | 'external';
 }
 
 interface BundleDeal {
@@ -90,7 +91,8 @@ export default function Admin() {
     product_id: "",
     is_clothing: false,
     available_sizes: [] as string[],
-    additional_images: [] as string[]
+    additional_images: [] as string[],
+    shop_type: "external" as 'internal' | 'external'
   });
 
   const [bundleFormData, setBundleFormData] = useState({
@@ -294,7 +296,8 @@ export default function Admin() {
             product_id: finalData.product_id,
             is_clothing: finalData.is_clothing,
             available_sizes: finalData.available_sizes,
-            additional_images: finalData.additional_images
+            additional_images: finalData.additional_images,
+            shop_type: finalData.shop_type
           })
           .eq('id', editingItem.id)
           .select()
@@ -347,7 +350,8 @@ export default function Admin() {
         product_id: "",
         is_clothing: false,
         available_sizes: [],
-        additional_images: []
+        additional_images: [],
+        shop_type: "external"
       });
       setCoverImageFile(null);
       setAdditionalImageFiles([]);
@@ -382,7 +386,8 @@ export default function Admin() {
       product_id: item.product_id || "",
       is_clothing: item.is_clothing || false,
       available_sizes: item.available_sizes || [],
-      additional_images: item.additional_images || []
+      additional_images: item.additional_images || [],
+      shop_type: item.shop_type || "external"
     });
     setDialogOpen(true);
   };
@@ -406,7 +411,8 @@ export default function Admin() {
       product_id: "",
       is_clothing: false,
       available_sizes: [],
-      additional_images: []
+      additional_images: [],
+      shop_type: "external"
     });
     setCoverImageFile(null);
     setAdditionalImageFiles([]);
@@ -1187,6 +1193,28 @@ export default function Admin() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Shop Type Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="space-y-2">
+                    <Label htmlFor="shop_type">Type de boutique</Label>
+                    <select
+                      id="shop_type"
+                      value={formData.shop_type}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        shop_type: e.target.value as 'internal' | 'external' 
+                      }))}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="external">Oryshop (Boutique publique)</option>
+                      <option value="internal">Orydia (Boutique interne)</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      Oryshop : visible par tous les clients • Orydia : boutique interne uniquement
+                    </p>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={uploadingImages}>

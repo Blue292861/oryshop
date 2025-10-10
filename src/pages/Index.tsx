@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { Link } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
 
 // Home page component
 
@@ -31,6 +32,7 @@ export default function Index() {
   const [showTemporary, setShowTemporary] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchTemporaryItems();
@@ -58,66 +60,30 @@ export default function Index() {
     }
   };
 
-  const handlePurchase = async (item: ShopItem) => {
+  const handleAddToCart = (item: ShopItem) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Erreur",
-          description: "Vous devez être connecté pour acheter",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-      const tensensEarned = Math.floor((finalPrice * 0.05) * 166);
-
-      // Use the secure RPC function to create the order
-      const { data: orderId, error: orderError } = await supabase
-        .rpc('create_instant_order', {
-          p_item_id: item.id,
-          p_item_name: item.name,
-          p_price: finalPrice
-        });
-
-      if (orderError) {
-        console.error('Order creation error:', orderError);
-        throw new Error(`Impossible de créer la commande: ${orderError.message}`);
-      }
-
-      // Create points transaction
-      const { error: pointsError } = await supabase
-        .from('point_transactions')
-        .insert({
-          user_id: user.id,
-          points: tensensEarned,
-          transaction_type: 'purchase_reward',
-          description: `Achat: ${item.name}`,
-          source_app: 'oryshop'
-        });
-
-      if (pointsError) {
-        console.error('Points transaction error:', pointsError);
-        // Don't throw error for points, order is already created
-        toast({
-          title: "Achat réussi mais...",
-          description: "Les points Tensens n'ont pas pu être crédités. Contactez le support.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Achat réussi !",
-        description: `Vous avez gagné ${tensensEarned} points Tensens !`,
+      
+      addToCart({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        price: finalPrice,
+        image_url: item.image_url,
+        seller: item.seller,
+        is_on_sale: item.is_on_sale,
+        sale_price: item.sale_price,
+        tags: item.tags
       });
 
-    } catch (error: any) {
-      console.error('Purchase error:', error);
       toast({
-        title: "Erreur lors de l'achat",
-        description: error.message || "Une erreur est survenue. Veuillez réessayer.",
+        title: "Ajouté au panier",
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'ajouter l'article au panier",
         variant: "destructive",
       });
     }
@@ -227,12 +193,12 @@ export default function Index() {
                         </div>
 
                         <Button 
-                          onClick={() => handlePurchase(item)}
+                          onClick={() => handleAddToCart(item)}
                           className="w-full cursor-coin-pouch"
                           size="sm"
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
-                          Acheter
+                          Ajouter au panier
                         </Button>
                       </CardContent>
                     </Card>
