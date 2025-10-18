@@ -411,129 +411,170 @@ export default function OrdersManagement() {
                     
                     <AccordionContent className="pt-4">
                       <div className="space-y-3">
-                        {group.orders.map((order) => (
-                          <div 
-                            key={order.id}
-                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                          >
-                            <div className="flex-1">
-                              <div className="font-medium">{order.item_name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {order.price.toFixed(2)} €
+                        {(() => {
+                          // Regrouper les articles identiques et compter les quantités
+                          const itemMap = new Map<string, { 
+                            item_id: string;
+                            item_name: string; 
+                            price: number; 
+                            quantity: number; 
+                            orders: Order[];
+                            status: string;
+                          }>();
+                          
+                          group.orders.forEach(order => {
+                            const existing = itemMap.get(order.item_id);
+                            if (existing) {
+                              existing.quantity += 1;
+                              existing.orders.push(order);
+                            } else {
+                              itemMap.set(order.item_id, {
+                                item_id: order.item_id,
+                                item_name: order.item_name,
+                                price: order.price,
+                                quantity: 1,
+                                orders: [order],
+                                status: order.status
+                              });
+                            }
+                          });
+                          
+                          return Array.from(itemMap.values()).map((item) => (
+                            <div 
+                              key={item.item_id}
+                              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium">{item.item_name}</div>
+                                  {item.quantity > 1 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Quantité: {item.quantity}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {item.price.toFixed(2)} € × {item.quantity} = {(item.price * item.quantity).toFixed(2)} €
+                                </div>
                               </div>
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => fetchItemDetails(order.item_id)}
-                                  >
-                                    <Eye className="h-3 w-3 mr-1" />
-                                    Détails
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                                  <DialogHeader>
-                                    <DialogTitle>Détails du produit</DialogTitle>
-                                    <DialogDescription>
-                                      Informations complètes sur l'article commandé
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="py-4">
-                                    {isItemLoading ? (
-                                      <div className="flex justify-center items-center h-48">
-                                        <RefreshCw className="h-8 w-8 animate-spin" />
-                                      </div>
-                                    ) : selectedItem ? (
-                                      <div className="space-y-4">
-                                        <img 
-                                          src={selectedItem.image_url} 
-                                          alt={selectedItem.name}
-                                          className="w-full h-64 object-cover rounded-lg"
-                                        />
-                                        
-                                        {selectedItem.additional_images && selectedItem.additional_images.length > 0 && (
-                                          <div className="grid grid-cols-4 gap-2">
-                                            {selectedItem.additional_images.map((img, idx) => (
-                                              <img 
-                                                key={idx}
-                                                src={img} 
-                                                alt={`${selectedItem.name} ${idx + 1}`}
-                                                className="w-full h-20 object-cover rounded"
-                                              />
-                                            ))}
-                                          </div>
-                                        )}
-                                        
-                                        <div className="space-y-2">
-                                          <h3 className="text-xl font-bold">{selectedItem.name}</h3>
-                                          <p className="text-2xl font-bold text-primary">
-                                            {selectedItem.price.toFixed(2)} €
-                                          </p>
+                              
+                              <div className="flex gap-2">
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => fetchItemDetails(item.item_id)}
+                                    >
+                                      <Eye className="h-3 w-3 mr-1" />
+                                      Détails
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                    <DialogHeader>
+                                      <DialogTitle>Détails du produit</DialogTitle>
+                                      <DialogDescription>
+                                        Informations complètes sur l'article commandé
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4">
+                                      {isItemLoading ? (
+                                        <div className="flex justify-center items-center h-48">
+                                          <RefreshCw className="h-8 w-8 animate-spin" />
+                                        </div>
+                                      ) : selectedItem ? (
+                                        <div className="space-y-4">
+                                          <img 
+                                            src={selectedItem.image_url} 
+                                            alt={selectedItem.name}
+                                            className="w-full h-64 object-cover rounded-lg"
+                                          />
                                           
-                                          <div className="pt-2">
-                                            <h4 className="font-semibold mb-1">Description</h4>
-                                            <p className="text-muted-foreground">{selectedItem.description}</p>
-                                          </div>
-                                          
-                                          <div className="flex gap-4">
-                                            <div>
-                                              <h4 className="font-semibold mb-1">Catégorie</h4>
-                                              <Badge variant="secondary">{selectedItem.category}</Badge>
-                                            </div>
-                                            
-                                            <div>
-                                              <h4 className="font-semibold mb-1">Vendeur</h4>
-                                              <p className="text-sm">{selectedItem.seller}</p>
-                                            </div>
-                                          </div>
-                                          
-                                          {selectedItem.tags && selectedItem.tags.length > 0 && (
-                                            <div>
-                                              <h4 className="font-semibold mb-1">Tags</h4>
-                                              <div className="flex flex-wrap gap-1">
-                                                {selectedItem.tags.map((tag, idx) => (
-                                                  <Badge key={idx} variant="outline" className="text-xs">
-                                                    {tag}
-                                                  </Badge>
-                                                ))}
-                                              </div>
+                                          {selectedItem.additional_images && selectedItem.additional_images.length > 0 && (
+                                            <div className="grid grid-cols-4 gap-2">
+                                              {selectedItem.additional_images.map((img, idx) => (
+                                                <img 
+                                                  key={idx}
+                                                  src={img} 
+                                                  alt={`${selectedItem.name} ${idx + 1}`}
+                                                  className="w-full h-20 object-cover rounded"
+                                                />
+                                              ))}
                                             </div>
                                           )}
+                                          
+                                          <div className="space-y-2">
+                                            <h3 className="text-xl font-bold">{selectedItem.name}</h3>
+                                            <p className="text-2xl font-bold text-primary">
+                                              {selectedItem.price.toFixed(2)} €
+                                            </p>
+                                            
+                                            <div className="pt-2">
+                                              <h4 className="font-semibold mb-1">Description</h4>
+                                              <p className="text-muted-foreground">{selectedItem.description}</p>
+                                            </div>
+                                            
+                                            <div className="flex gap-4">
+                                              <div>
+                                                <h4 className="font-semibold mb-1">Catégorie</h4>
+                                                <Badge variant="secondary">{selectedItem.category}</Badge>
+                                              </div>
+                                              
+                                              <div>
+                                                <h4 className="font-semibold mb-1">Vendeur</h4>
+                                                <p className="text-sm">{selectedItem.seller}</p>
+                                              </div>
+                                            </div>
+                                            
+                                            {selectedItem.tags && selectedItem.tags.length > 0 && (
+                                              <div>
+                                                <h4 className="font-semibold mb-1">Tags</h4>
+                                                <div className="flex flex-wrap gap-1">
+                                                  {selectedItem.tags.map((tag, idx) => (
+                                                    <Badge key={idx} variant="outline" className="text-xs">
+                                                      {tag}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
-                                      </div>
+                                      ) : (
+                                        <div className="text-center text-muted-foreground py-8">
+                                          Détails du produit non trouvés
+                                        </div>
+                                      )}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                                
+                                {item.status === 'pending' && (
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      // Valider tous les orders de cet item
+                                      for (const order of item.orders) {
+                                        await updateOrderStatus(order.id, 'completed');
+                                      }
+                                    }}
+                                    disabled={item.orders.some(o => updating === o.id)}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    {item.orders.some(o => updating === o.id) ? (
+                                      <RefreshCw className="h-3 w-3 animate-spin" />
                                     ) : (
-                                      <div className="text-center text-muted-foreground py-8">
-                                        Détails du produit non trouvés
-                                      </div>
+                                      <>
+                                        <Check className="h-3 w-3 mr-1" />
+                                        Valider
+                                      </>
                                     )}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
-                              
-                              {order.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateOrderStatus(order.id, 'completed')}
-                                  disabled={updating === order.id}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  {updating === order.id ? (
-                                    <RefreshCw className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <>
-                                      <Check className="h-3 w-3 mr-1" />
-                                      Valider
-                                    </>
-                                  )}
-                                </Button>
-                              )}
+                                  </Button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ));
+                        })()}
                         
                         <div className="flex justify-end pt-2 border-t">
                           <Button
