@@ -56,6 +56,7 @@ export default function OrdersManagement() {
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isItemLoading, setIsItemLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [itemPriceMap, setItemPriceMap] = useState<Map<string, number>>(new Map());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -235,6 +236,33 @@ export default function OrdersManagement() {
     }
   };
 
+  const fetchItemPricesForGroup = async (itemIds: string[]) => {
+    if (itemIds.length === 0) return;
+    
+    // Skip if we already have all the prices
+    const missingIds = itemIds.filter(id => !itemPriceMap.has(id));
+    if (missingIds.length === 0) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('shop_items')
+        .select('id, price, is_on_sale, sale_price')
+        .in('id', missingIds);
+
+      if (error) throw error;
+      
+      const newPriceMap = new Map(itemPriceMap);
+      data?.forEach(item => {
+        const unitPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
+        newPriceMap.set(item.id, unitPrice);
+      });
+      
+      setItemPriceMap(newPriceMap);
+    } catch (error) {
+      console.error('Error fetching item prices:', error);
+    }
+  };
+
   const deleteOrderGroup = async (group: OrderGroup) => {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer cette commande de ${group.orders.length} article(s) ?`)) {
       return;
@@ -387,7 +415,13 @@ export default function OrdersManagement() {
                     value={group.groupId}
                     className="border rounded-lg px-4 bg-card"
                   >
-                    <AccordionTrigger className="hover:no-underline">
+                    <AccordionTrigger 
+                      className="hover:no-underline"
+                      onClick={() => {
+                        const itemIds = [...new Set(group.orders.map(o => o.item_id))];
+                        fetchItemPricesForGroup(itemIds);
+                      }}
+                    >
                       <div className="flex items-center justify-between w-full pr-4">
                         <div className="flex items-center gap-4">
                           <ShoppingBag className="h-5 w-5 text-muted-foreground" />
@@ -439,24 +473,41 @@ export default function OrdersManagement() {
                             }
                           });
                           
-                          return Array.from(itemMap.values()).map((item) => (
-                            <div 
-                              key={item.item_id}
-                              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <div className="font-medium">{item.item_name}</div>
-                                  {item.quantity > 1 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Quantité: {item.quantity}
-                                    </Badge>
-                                  )}
+                          return Array.from(itemMap.values()).map((item) => {
+                            // Estimate quantity for old orders (before the fix)
+                            const unitPrice = itemPriceMap.get(item.item_id);
+                            let displayQuantity = item.quantity;
+                            let isEstimated = false;
+                            let pricePerUnit = item.price;
+                            
+                            if (item.quantity === 1 && unitPrice && item.price > unitPrice * 1.01) {
+                              // Old order format: one line with total price
+                              const estimated = Math.round(item.price / unitPrice);
+                              if (estimated >= 2 && Math.abs(item.price - (unitPrice * estimated)) < 0.5) {
+                                displayQuantity = estimated;
+                                isEstimated = true;
+                                pricePerUnit = unitPrice;
+                              }
+                            }
+                            
+                            return (
+                              <div 
+                                key={item.item_id}
+                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-medium">{item.item_name}</div>
+                                    {(displayQuantity > 1 || isEstimated) && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        Quantité: {displayQuantity}{isEstimated && ' (estimé)'}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {pricePerUnit.toFixed(2)} € × {displayQuantity} = {(pricePerUnit * displayQuantity).toFixed(2)} €
+                                  </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {item.price.toFixed(2)} € × {item.quantity} = {(item.price * item.quantity).toFixed(2)} €
-                                </div>
-                              </div>
                               
                               <div className="flex gap-2">
                                 <Dialog>
@@ -571,9 +622,10 @@ export default function OrdersManagement() {
                                     )}
                                   </Button>
                                 )}
+                                </div>
                               </div>
-                            </div>
-                          ));
+                            );
+                          });
                         })()}
                         
                         <div className="flex justify-end pt-2 border-t">

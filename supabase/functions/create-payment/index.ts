@@ -229,42 +229,50 @@ serve(async (req) => {
     });
 
     // Create pending orders in database using secure SECURITY DEFINER function
-    console.log(`Creating ${items.length} pending orders for user ${user.id}`);
+    // Create one order per unit (quantity times)
+    console.log(`Creating pending orders for user ${user.id}`);
     
-    const orderPromises = items.map(async (item: any) => {
-      const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
-      const totalPrice = finalPrice * item.quantity;
+    const orderPromises = items.flatMap((item: any) => {
+      const unitPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
+      const itemNameWithSize = item.selectedSize 
+        ? `${item.name} (Taille ${item.selectedSize})` 
+        : item.name;
       
-      console.log(`Calling create_pending_order for item ${item.id}, user ${user.id}, price ${totalPrice}`);
-      
-      // Use the secure PostgreSQL function to create orders
-      const { data, error } = await supabaseService.rpc('create_pending_order', {
-        p_user_id: user.id,
-        p_item_id: item.id,
-        p_item_name: item.name,
-        p_price: totalPrice
+      // Create one order entry per unit
+      return Array.from({ length: item.quantity }, async (_, index) => {
+        console.log(`Calling create_pending_order for item ${item.id}, unit ${index + 1}/${item.quantity}, user ${user.id}, price ${unitPrice}`);
+        
+        // Use the secure PostgreSQL function to create orders
+        const { data, error } = await supabaseService.rpc('create_pending_order', {
+          p_user_id: user.id,
+          p_item_id: item.id,
+          p_item_name: itemNameWithSize,
+          p_price: unitPrice
+        });
+
+        if (error) {
+          console.error(`Failed to create order for item ${item.id}, unit ${index + 1}:`, error);
+          await logSecurityEvent(supabaseService, user.id, 'order_creation_failed', {
+            item_id: item.id,
+            item_name: itemNameWithSize,
+            price: unitPrice,
+            unit: index + 1,
+            quantity: item.quantity,
+            error_message: error.message,
+            error_code: error.code,
+            error_details: error.details,
+            error_hint: error.hint
+          }, 'error');
+          throw new Error(`Échec de la création de commande: ${error.message || 'Erreur inconnue'}`);
+        }
+
+        console.log(`Successfully created pending order ${data} for user ${user.id}, item ${item.id}, unit ${index + 1}`);
+        return data;
       });
-
-      if (error) {
-        console.error(`Failed to create order for item ${item.id}:`, error);
-        await logSecurityEvent(supabaseService, user.id, 'order_creation_failed', {
-          item_id: item.id,
-          item_name: item.name,
-          price: totalPrice,
-          error_message: error.message,
-          error_code: error.code,
-          error_details: error.details,
-          error_hint: error.hint
-        }, 'error');
-        throw new Error(`Échec de la création de commande: ${error.message || 'Erreur inconnue'}`);
-      }
-
-      console.log(`Successfully created pending order ${data} for user ${user.id}, item ${item.id}`);
-      return data;
     });
 
     const orderResults = await Promise.all(orderPromises);
-    console.log(`Created ${orderResults.length} pending orders for session ${session.id}`);
+    console.log(`Created ${orderResults.length} pending order entries for session ${session.id}`);
 
     console.log(`Created Stripe session ${session.id} for user ${user.id}`);
 
