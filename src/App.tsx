@@ -21,6 +21,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const SalesExport = lazy(() => import("./pages/SalesExport"));
 const OrdersManagement = lazy(() => import("./pages/OrdersManagement"));
 const CategoryShop = lazy(() => import("./pages/CategoryShop"));
+const Favorites = lazy(() => import("./pages/Favorites"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -64,6 +65,14 @@ const App = () => {
                     } 
                   />
                   <Route 
+                    path="/profile/favorites" 
+                    element={
+                      <ProtectedRoute>
+                        <Favorites />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route
                     path="/cart" 
                     element={
                       <ProtectedRoute>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Mail, MapPin, Building, Edit, Save, X, Trophy, Coins, ShoppingBag } from "lucide-react";
+import { User, Mail, MapPin, Building, Edit, Save, X, Trophy, Coins, ShoppingBag, Heart, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { useCart } from "@/contexts/CartContext";
+import { useNavigate } from "react-router-dom";
+import ProductModal from "@/components/ProductModal";
 
 interface Profile {
   id: string;
@@ -35,20 +39,46 @@ interface UserStats {
   experience_points: number;
 }
 
+interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  category: string;
+  seller: string;
+  is_on_sale?: boolean;
+  sale_price?: number;
+  is_temporary?: boolean;
+  is_clothing?: boolean;
+  available_sizes?: string[];
+  additional_images?: string[];
+}
+
 export default function Profile() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [favoriteItems, setFavoriteItems] = useState<ShopItem[]>([]);
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editForm, setEditForm] = useState<Partial<Profile>>({});
+  const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
+  const { favorites, removeFromFavorites } = useFavorites();
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProfile();
     fetchOrders();
     fetchUserStats();
   }, []);
+
+  useEffect(() => {
+    fetchFavoriteItems();
+  }, [favorites]);
 
   const fetchProfile = async () => {
     try {
@@ -372,7 +402,118 @@ export default function Profile() {
             </Card>
           </div>
         </div>
+
+        {/* Favorites Section */}
+        <Card className="border-border bg-card/50 backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Mes Favoris
+              </CardTitle>
+              {favoriteItems.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/profile/favorites')}
+                >
+                  Voir tout
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {favoriteItems.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {favoriteItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="bg-background rounded-lg overflow-hidden border border-border hover:shadow-lg transition-all"
+                  >
+                    <div className="relative cursor-pointer" onClick={() => {
+                      setSelectedItem(item);
+                      setIsModalOpen(true);
+                    }}>
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-32 object-cover"
+                      />
+                      {item.is_temporary && (
+                        <Badge className="absolute top-2 left-2 bg-orange-600 text-white text-xs">
+                          Temporaire
+                        </Badge>
+                      )}
+                      {item.is_on_sale && item.sale_price && (
+                        <Badge className="absolute top-2 right-2 bg-red-600 text-white text-xs">
+                          Soldé
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <h4 className="font-semibold text-sm line-clamp-1">{item.name}</h4>
+                      <div className="flex items-center justify-between">
+                        {item.is_on_sale && item.sale_price ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-bold text-primary">{item.sale_price}€</span>
+                            <span className="text-xs text-muted-foreground line-through">{item.price}€</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-bold text-primary">{item.price}€</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddToCartFromFavorites(item)}
+                          className="flex-1"
+                        >
+                          <ShoppingBag className="h-3 w-3 mr-1" />
+                          Panier
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeFromFavorites(item.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-2" />
+                <p className="text-muted-foreground text-sm">
+                  Vous n'avez pas encore de favoris
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/shop')}
+                  className="mt-4"
+                >
+                  Explorer la boutique
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {selectedItem && (
+        <ProductModal
+          item={selectedItem}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedItem(null);
+          }}
+        />
+      )}
     </Layout>
   );
 }

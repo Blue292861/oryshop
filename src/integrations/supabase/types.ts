@@ -285,6 +285,53 @@ export type Database = {
         }
         Relationships: []
       }
+      book_chapter_epubs: {
+        Row: {
+          book_id: string
+          chapter_number: number
+          created_at: string
+          description: string | null
+          epub_url: string
+          id: string
+          illustration_url: string | null
+          position: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          chapter_number: number
+          created_at?: string
+          description?: string | null
+          epub_url: string
+          id?: string
+          illustration_url?: string | null
+          position: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          chapter_number?: number
+          created_at?: string
+          description?: string | null
+          epub_url?: string
+          id?: string
+          illustration_url?: string | null
+          position?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_chapter_epubs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_chapters: {
         Row: {
           book_id: string
@@ -1154,6 +1201,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_favorites: {
+        Row: {
+          added_at: string | null
+          id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string | null
+          id?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string | null
+          id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_genre_preferences: {
         Row: {

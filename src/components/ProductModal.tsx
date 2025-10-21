@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ShoppingCart, Star, Coins, X } from "lucide-react";
+import { ShoppingCart, Star, Coins, X, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/contexts/CartContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface ShopItem {
@@ -31,6 +32,7 @@ interface ProductModalProps {
 
 export default function ProductModal({ item, isOpen, onClose }: ProductModalProps) {
   const { addToCart } = useCart();
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -78,6 +80,24 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
                 className="w-full h-full object-contain bg-background"
               />
               <div className="absolute top-4 right-4 flex flex-col gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isFavorite(item.id)) {
+                      removeFromFavorites(item.id);
+                    } else {
+                      addToFavorites(item.id);
+                    }
+                  }}
+                  className="p-2 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background transition-all hover:scale-110"
+                  aria-label={isFavorite(item.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-colors ${
+                      isFavorite(item.id) ? "text-primary fill-primary" : "text-muted-foreground"
+                    }`}
+                  />
+                </button>
                 {item.is_on_sale && (
                   <Badge className="bg-red-600 text-white">
                     Soldé

@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/contexts/CartContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ShoppingCart, Search, Filter, Coins, LogIn } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Coins, LogIn, Heart } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import ProductModal from '@/components/ProductModal';
 import { Link } from 'react-router-dom';
@@ -45,6 +46,7 @@ export default function Shop() {
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { addToCart } = useCart();
+  const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -264,6 +266,24 @@ export default function Shop() {
                           alt={item.name}
                           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                         />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isFavorite(item.id)) {
+                              removeFromFavorites(item.id);
+                            } else {
+                              addToFavorites(item.id);
+                            }
+                          }}
+                          className="absolute top-2 left-2 p-2 bg-background/80 backdrop-blur-sm rounded-full hover:bg-background transition-all hover:scale-110 z-10"
+                          aria-label={isFavorite(item.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                        >
+                          <Heart
+                            className={`w-4 h-4 transition-colors ${
+                              isFavorite(item.id) ? "text-primary fill-primary" : "text-muted-foreground"
+                            }`}
+                          />
+                        </button>
                         <div className="absolute top-2 right-2 flex flex-col gap-1">
                           {item.is_on_sale && (
                             <Badge className="bg-red-600 text-white">
