@@ -57,9 +57,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
-      setItems(JSON.parse(savedCart));
+      const parsedCart = JSON.parse(savedCart);
+      setItems(parsedCart);
+      
+      // Check if cart contains recently completed orders
+      checkAndClearCompletedOrders(parsedCart);
     }
     fetchBundles();
+    
+    // Listen for cart changes in other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'cart' && e.newValue === null) {
+        setItems([]);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Save cart to localStorage whenever items change
@@ -123,6 +137,31 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = () => {
     setItems([]);
+  };
+
+  const checkAndClearCompletedOrders = async (cartItems: CartItem[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || cartItems.length === 0) return;
+    
+    // Check for completed orders in the last 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select('item_id')
+      .eq('user_id', user.id)
+      .eq('status', 'completed')
+      .gte('created_at', tenMinutesAgo);
+    
+    if (recentOrders && recentOrders.length > 0) {
+      const completedItemIds = recentOrders.map(o => o.item_id);
+      const hasCompletedItems = cartItems.some(item => 
+        completedItemIds.includes(item.id)
+      );
+      
+      if (hasCompletedItems) {
+        clearCart();
+      }
+    }
   };
 
   const getSubtotal = () => {

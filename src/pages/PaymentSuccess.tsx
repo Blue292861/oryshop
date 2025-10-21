@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { clearCart } = useCart();
 
   useEffect(() => {
     const updateOrderStatus = async () => {
@@ -35,8 +37,8 @@ export default function PaymentSuccess() {
         if (error) {
           console.error('Error updating orders:', error);
         } else {
-          // Clear cart from localStorage
-          localStorage.removeItem('cart');
+          // Clear cart using CartContext method (syncs state + localStorage)
+          clearCart();
           
           toast({
             title: "Paiement réussi !",
