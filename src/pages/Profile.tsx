@@ -202,6 +202,45 @@ export default function Profile() {
     setEditForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const fetchFavoriteItems = async () => {
+    try {
+      if (favorites.length === 0) {
+        setFavoriteItems([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('shop_items')
+        .select('*')
+        .in('id', favorites.slice(0, 4));
+
+      if (error) throw error;
+
+      const sortedData = data?.sort((a, b) => {
+        const aIndex = favorites.indexOf(a.id);
+        const bIndex = favorites.indexOf(b.id);
+        return aIndex - bIndex;
+      }) || [];
+
+      setFavoriteItems(sortedData);
+    } catch (error) {
+      console.error('Error fetching favorite items:', error);
+    }
+  };
+
+  const handleAddToCartFromFavorites = (item: ShopItem) => {
+    if (item.is_clothing) {
+      setSelectedItem(item);
+      setIsModalOpen(true);
+    } else {
+      addToCart(item);
+      toast({
+        title: "Article ajouté !",
+        description: `${item.name} a été ajouté à votre panier`,
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
