@@ -92,7 +92,7 @@ export default function Admin() {
     is_clothing: false,
     available_sizes: [] as string[],
     additional_images: [] as string[],
-    shop_type: "external" as 'internal' | 'external'
+    shop_type: "" as 'internal' | 'external' | ""
   });
 
   const [bundleFormData, setBundleFormData] = useState({
@@ -247,6 +247,16 @@ export default function Admin() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validation du shop_type
+    if (!formData.shop_type) {
+      toast({
+        title: "Champ requis",
+        description: "Veuillez sélectionner le type de boutique (Oryshop ou Orydia)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setUploadingImages(true);
       let finalImageUrl = formData.image_url;
@@ -275,7 +285,8 @@ export default function Admin() {
         additional_images: finalAdditionalImages,
         price: parseFloat(formData.price),
         sale_price: formData.is_on_sale && formData.sale_price ? parseFloat(formData.sale_price) : null,
-        tags: formData.tags
+        tags: formData.tags,
+        shop_type: formData.shop_type as 'internal' | 'external'
       };
 
       if (editingItem) {
@@ -351,7 +362,7 @@ export default function Admin() {
         is_clothing: false,
         available_sizes: [],
         additional_images: [],
-        shop_type: "external"
+        shop_type: ""
       });
       setCoverImageFile(null);
       setAdditionalImageFiles([]);
@@ -412,7 +423,7 @@ export default function Admin() {
       is_clothing: false,
       available_sizes: [],
       additional_images: [],
-      shop_type: "external"
+      shop_type: ""
     });
     setCoverImageFile(null);
     setAdditionalImageFiles([]);
@@ -1198,7 +1209,9 @@ export default function Admin() {
                 {/* Shop Type Section */}
                 <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
                   <div className="space-y-2">
-                    <Label htmlFor="shop_type">Type de boutique</Label>
+                    <Label htmlFor="shop_type" className="flex items-center gap-1">
+                      Type de boutique <span className="text-destructive">*</span>
+                    </Label>
                     <select
                       id="shop_type"
                       value={formData.shop_type}
@@ -1206,13 +1219,17 @@ export default function Admin() {
                         ...prev, 
                         shop_type: e.target.value as 'internal' | 'external' 
                       }))}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className={`w-full rounded-md border px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                        !formData.shop_type ? 'border-destructive' : 'border-input'
+                      } bg-background`}
+                      required
                     >
+                      <option value="">-- Choisir une boutique --</option>
                       <option value="external">Oryshop (Boutique publique)</option>
                       <option value="internal">Orydia (Boutique interne)</option>
                     </select>
                     <p className="text-xs text-muted-foreground">
-                      Oryshop : visible par tous les clients • Orydia : boutique interne uniquement
+                      <span className="text-destructive font-semibold">Requis :</span> Oryshop = visible par tous • Orydia = boutique interne uniquement
                     </p>
                   </div>
                 </div>
