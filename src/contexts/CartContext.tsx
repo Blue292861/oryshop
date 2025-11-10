@@ -45,6 +45,14 @@ interface CartContextType {
   getAppliedDiscounts: () => AppliedDiscount[];
   getTotalDiscount: () => number;
   getSubtotal: () => number;
+  getBundlesForProduct: (productId: string) => BundleDeal[];
+  getIncompleteBundles: () => Array<{
+    bundle: BundleDeal;
+    missingProducts: string[];
+    hasAtLeastOne: boolean;
+  }>;
+  addBundleToCart: (bundleId: string) => Promise<void>;
+  bundles: BundleDeal[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -230,6 +238,68 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
+  const getBundlesForProduct = (productId: string): BundleDeal[] => {
+    return bundles.filter(bundle => 
+      bundle.is_active && bundle.product_ids.includes(productId)
+    );
+  };
+
+  const getIncompleteBundles = (): Array<{
+    bundle: BundleDeal;
+    missingProducts: string[];
+    hasAtLeastOne: boolean;
+  }> => {
+    const cartProductIds = items.map(item => item.id);
+    
+    return bundles
+      .filter(bundle => bundle.is_active)
+      .map(bundle => {
+        const missingProducts = bundle.product_ids.filter(
+          productId => !cartProductIds.includes(productId)
+        );
+        const hasAtLeastOne = bundle.product_ids.some(
+          productId => cartProductIds.includes(productId)
+        );
+        
+        return {
+          bundle,
+          missingProducts,
+          hasAtLeastOne
+        };
+      })
+      .filter(result => result.hasAtLeastOne && result.missingProducts.length > 0);
+  };
+
+  const addBundleToCart = async (bundleId: string) => {
+    const bundle = bundles.find(b => b.id === bundleId);
+    if (!bundle) return;
+    
+    // Récupérer les détails des produits depuis Supabase
+    const { data: products } = await supabase
+      .from('shop_items')
+      .select('*')
+      .in('id', bundle.product_ids);
+    
+    if (products) {
+      products.forEach(product => {
+        // Ne pas ajouter si déjà dans le panier
+        const existingItem = items.find(item => item.id === product.id);
+        if (!existingItem) {
+          addToCart({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: product.price,
+            image_url: product.image_url,
+            seller: product.seller,
+            is_on_sale: product.is_on_sale,
+            sale_price: product.sale_price,
+            tags: product.tags
+          });
+        }
+      });
+    }
+  };
 
   return (
     <CartContext.Provider value={{
@@ -244,7 +314,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       getTotalItems,
       getAppliedDiscounts,
       getTotalDiscount,
-      getSubtotal
+      getSubtotal,
+      getBundlesForProduct,
+      getIncompleteBundles,
+      addBundleToCart,
+      bundles
     }}>
       {children}
     </CartContext.Provider>

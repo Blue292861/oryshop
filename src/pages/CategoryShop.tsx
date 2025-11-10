@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, ShoppingCart, Search, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductModal from '@/components/ProductModal';
+import BundleNotificationDialog from '@/components/BundleNotificationDialog';
 
 interface ShopItem {
   id: string;
@@ -37,7 +38,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 export default function CategoryShop() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -49,6 +50,9 @@ export default function CategoryShop() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
+  const [selectedBundles, setSelectedBundles] = useState<any[]>([]);
+  const [lastAddedProduct, setLastAddedProduct] = useState<ShopItem | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -149,6 +153,23 @@ export default function CategoryShop() {
         description: `${item.name} a été ajouté à votre panier`,
       });
     }
+
+    // Vérifier si le produit fait partie d'un bundle
+    const productBundles = getBundlesForProduct(item.id);
+    if (productBundles.length > 0) {
+      setSelectedBundles(productBundles);
+      setLastAddedProduct(item);
+      setBundleDialogOpen(true);
+    }
+  };
+
+  const handleAddBundleFromCategory = async (bundleId: string) => {
+    await addBundleToCart(bundleId);
+    toast({
+      title: "🎉 Lot complet ajouté !",
+      description: "Tous les articles du lot sont maintenant dans votre panier",
+    });
+    setBundleDialogOpen(false);
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -327,6 +348,14 @@ export default function CategoryShop() {
         item={selectedItem}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <BundleNotificationDialog
+        isOpen={bundleDialogOpen}
+        onClose={() => setBundleDialogOpen(false)}
+        bundles={selectedBundles}
+        currentProductName={lastAddedProduct?.name || ""}
+        onAddBundle={handleAddBundleFromCategory}
       />
     </div>
   );

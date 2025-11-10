@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, Search, Filter, Coins, LogIn, Heart } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import ProductModal from '@/components/ProductModal';
+import BundleNotificationDialog from '@/components/BundleNotificationDialog';
 import { Link } from 'react-router-dom';
 
 interface ShopItem {
@@ -27,6 +28,8 @@ interface ShopItem {
   tags?: string[];
   categories?: string[];
   is_temporary?: boolean;
+  is_clothing?: boolean;
+  available_sizes?: string[];
 }
 
 const PREDEFINED_CATEGORIES = [
@@ -45,7 +48,10 @@ export default function Shop() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { addToCart } = useCart();
+  const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
+  const [selectedBundles, setSelectedBundles] = useState<any[]>([]);
+  const [lastAddedProduct, setLastAddedProduct] = useState<ShopItem | null>(null);
+  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -96,6 +102,13 @@ export default function Shop() {
   };
 
   const handleAddToCart = (item: ShopItem) => {
+    // Si c'est un vêtement, ouvrir le modal pour la sélection de taille
+    if (item.is_clothing) {
+      setSelectedItem(item);
+      setIsModalOpen(true);
+      return;
+    }
+
     addToCart(item);
     if (!user) {
       toast({
@@ -115,6 +128,23 @@ export default function Shop() {
         description: `${item.name} a été ajouté à votre panier`,
       });
     }
+
+    // Vérifier si le produit fait partie d'un bundle
+    const productBundles = getBundlesForProduct(item.id);
+    if (productBundles.length > 0) {
+      setSelectedBundles(productBundles);
+      setLastAddedProduct(item);
+      setBundleDialogOpen(true);
+    }
+  };
+
+  const handleAddBundleFromShop = async (bundleId: string) => {
+    await addBundleToCart(bundleId);
+    toast({
+      title: "🎉 Lot complet ajouté !",
+      description: "Tous les articles du lot sont maintenant dans votre panier",
+    });
+    setBundleDialogOpen(false);
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -365,6 +395,14 @@ export default function Shop() {
           item={selectedItem}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+        />
+
+        <BundleNotificationDialog
+          isOpen={bundleDialogOpen}
+          onClose={() => setBundleDialogOpen(false)}
+          bundles={selectedBundles}
+          currentProductName={lastAddedProduct?.name || ""}
+          onAddBundle={handleAddBundleFromShop}
         />
       </div>
     </Layout>

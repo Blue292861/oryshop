@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useCart } from "@/contexts/CartContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useToast } from "@/hooks/use-toast";
+import BundleNotificationDialog from "@/components/BundleNotificationDialog";
 
 interface ShopItem {
   id: string;
@@ -31,11 +32,13 @@ interface ProductModalProps {
 }
 
 export default function ProductModal({ item, isOpen, onClose }: ProductModalProps) {
-  const { addToCart } = useCart();
+  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showBundleDialog, setShowBundleDialog] = useState(false);
+  const [availableBundles, setAvailableBundles] = useState<any[]>([]);
 
   if (!item) return null;
 
@@ -57,6 +60,24 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
       title: "Article ajouté !",
       description: `${item.name} a été ajouté à votre panier${selectedSize ? ` (taille ${selectedSize})` : ''}`,
     });
+
+    // Vérifier si le produit fait partie d'un bundle
+    const productBundles = getBundlesForProduct(item.id);
+    if (productBundles.length > 0) {
+      setAvailableBundles(productBundles);
+      setShowBundleDialog(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleAddBundle = async (bundleId: string) => {
+    await addBundleToCart(bundleId);
+    toast({
+      title: "🎉 Lot ajouté !",
+      description: "Tous les articles du lot ont été ajoutés à votre panier",
+    });
+    setShowBundleDialog(false);
     onClose();
   };
 
@@ -217,6 +238,17 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
           </div>
         </div>
       </DialogContent>
+
+      <BundleNotificationDialog
+        isOpen={showBundleDialog}
+        onClose={() => {
+          setShowBundleDialog(false);
+          onClose();
+        }}
+        bundles={availableBundles}
+        currentProductName={item.name}
+        onAddBundle={handleAddBundle}
+      />
     </Dialog>
   );
 }

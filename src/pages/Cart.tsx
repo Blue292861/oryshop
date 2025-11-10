@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard, LogIn, UserPlus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard, LogIn, UserPlus, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { Link } from "react-router-dom";
+import BundleSuggestionCard from "@/components/BundleSuggestionCard";
 
 export default function Cart() {
   const { 
@@ -21,11 +22,60 @@ export default function Cart() {
     getTotalWithShipping,
     getSubtotal,
     getAppliedDiscounts,
-    getTotalDiscount
+    getTotalDiscount,
+    getIncompleteBundles,
+    addBundleToCart
   } = useCart();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [incompleteBundles, setIncompleteBundles] = useState<any[]>([]);
+  const [loadingBundleProducts, setLoadingBundleProducts] = useState(false);
   const { toast } = useToast();
+
+  // Récupérer les bundles incomplets et les détails des produits
+  useEffect(() => {
+    const fetchIncompleteBundlesData = async () => {
+      const incomplete = getIncompleteBundles();
+      
+      // Pour chaque bundle incomplet, récupérer les infos des produits manquants
+      const bundlesWithProducts = await Promise.all(
+        incomplete.map(async (bundleData) => {
+          const { data: products } = await supabase
+            .from('shop_items')
+            .select('id, name, price, image_url')
+            .in('id', bundleData.missingProducts);
+          
+          return {
+            ...bundleData,
+            missingProductsDetails: products || []
+          };
+        })
+      );
+      
+      setIncompleteBundles(bundlesWithProducts);
+    };
+    
+    fetchIncompleteBundlesData();
+  }, [items]);
+
+  const handleCompleteBundle = async (bundleId: string) => {
+    setLoadingBundleProducts(true);
+    try {
+      await addBundleToCart(bundleId);
+      toast({
+        title: "🎉 Lot complété !",
+        description: "Les articles manquants ont été ajoutés à votre panier",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter les articles",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingBundleProducts(false);
+    }
+  };
 
   const handleCheckout = async () => {
     try {
@@ -109,6 +159,26 @@ export default function Cart() {
             Vérifiez vos articles avant de finaliser votre commande
           </p>
         </div>
+
+        {/* Bundle Suggestions */}
+        {incompleteBundles.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold flex items-center gap-2">
+              <Gift className="h-6 w-6 text-primary" />
+              Offres spéciales pour vous
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {incompleteBundles.map((bundleData) => (
+                <BundleSuggestionCard
+                  key={bundleData.bundle.id}
+                  bundle={bundleData.bundle}
+                  missingProducts={bundleData.missingProductsDetails}
+                  onAddBundle={handleCompleteBundle}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
