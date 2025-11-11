@@ -294,6 +294,7 @@ export type Database = {
           epub_url: string
           id: string
           illustration_url: string | null
+          opf_url: string | null
           position: number
           title: string
           updated_at: string
@@ -306,6 +307,7 @@ export type Database = {
           epub_url: string
           id?: string
           illustration_url?: string | null
+          opf_url?: string | null
           position: number
           title: string
           updated_at?: string
@@ -318,11 +320,19 @@ export type Database = {
           epub_url?: string
           id?: string
           illustration_url?: string | null
+          opf_url?: string | null
           position?: number
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "book_chapter_epubs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "book_chapter_epubs_book_id_fkey"
             columns: ["book_id"]
@@ -364,6 +374,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "book_chapters_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "book_chapters_book_id_fkey"
             columns: ["book_id"]
@@ -486,6 +503,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      chapter_translations: {
+        Row: {
+          chapter_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          language: string
+          status: string
+          translated_content: Json
+          updated_at: string
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          language: string
+          status?: string
+          translated_content: Json
+          updated_at?: string
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          language?: string
+          status?: string
+          translated_content?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapter_translations_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "book_chapter_epubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       epub_reading_progress: {
         Row: {
@@ -753,6 +811,83 @@ export type Database = {
         }
         Relationships: []
       }
+      premium_code_redemptions: {
+        Row: {
+          code_id: string
+          id: string
+          months_granted: number
+          redeemed_at: string
+          subscription_type: string
+          user_id: string
+        }
+        Insert: {
+          code_id: string
+          id?: string
+          months_granted: number
+          redeemed_at?: string
+          subscription_type: string
+          user_id: string
+        }
+        Update: {
+          code_id?: string
+          id?: string
+          months_granted?: number
+          redeemed_at?: string
+          subscription_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_code_redemptions_code_id_fkey"
+            columns: ["code_id"]
+            isOneToOne: false
+            referencedRelation: "premium_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          current_uses: number
+          duration_months: number
+          expires_at: string | null
+          id: string
+          is_single_use: boolean
+          max_uses: number | null
+          subscription_type: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          current_uses?: number
+          duration_months?: number
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean
+          max_uses?: number | null
+          subscription_type: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          current_uses?: number
+          duration_months?: number
+          expires_at?: string | null
+          id?: string
+          is_single_use?: boolean
+          max_uses?: number | null
+          subscription_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -764,6 +899,7 @@ export type Database = {
           has_rated_app: boolean | null
           id: string
           last_name: string | null
+          postal_code: string | null
           rated_at: string | null
           tutorials_seen: string | null
           updated_at: string | null
@@ -779,6 +915,7 @@ export type Database = {
           has_rated_app?: boolean | null
           id: string
           last_name?: string | null
+          postal_code?: string | null
           rated_at?: string | null
           tutorials_seen?: string | null
           updated_at?: string | null
@@ -794,10 +931,100 @@ export type Database = {
           has_rated_app?: boolean | null
           id?: string
           last_name?: string | null
+          postal_code?: string | null
           rated_at?: string | null
           tutorials_seen?: string | null
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      promo_code_redemptions: {
+        Row: {
+          discount_applied: number
+          id: string
+          order_id: string | null
+          promo_code_id: string | null
+          redeemed_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          discount_applied: number
+          id?: string
+          order_id?: string | null
+          promo_code_id?: string | null
+          redeemed_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          discount_applied?: number
+          id?: string
+          order_id?: string | null
+          promo_code_id?: string | null
+          redeemed_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          current_uses: number | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          expiration_date: string | null
+          id: string
+          is_active: boolean | null
+          is_single_use: boolean | null
+          max_uses: number | null
+          minimum_purchase_amount: number | null
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_single_use?: boolean | null
+          max_uses?: number | null
+          minimum_purchase_amount?: number | null
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          expiration_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_single_use?: boolean | null
+          max_uses?: number | null
+          minimum_purchase_amount?: number | null
+          start_date?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -806,21 +1033,21 @@ export type Database = {
           action_type: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_id: string | null
         }
         Insert: {
           action_type: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_id?: string | null
         }
         Update: {
           action_type?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_id?: string | null
         }
         Relationships: []
@@ -855,7 +1082,7 @@ export type Database = {
           event_data: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           severity: string | null
           user_agent: string | null
           user_id: string | null
@@ -865,7 +1092,7 @@ export type Database = {
           event_data?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -875,7 +1102,7 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -899,6 +1126,7 @@ export type Database = {
           name: string
           price: number
           product_id: string | null
+          related_book_ids: string[] | null
           required_level: number | null
           sale_price: number | null
           seller: string
@@ -922,6 +1150,7 @@ export type Database = {
           name: string
           price: number
           product_id?: string | null
+          related_book_ids?: string[] | null
           required_level?: number | null
           sale_price?: number | null
           seller: string
@@ -945,6 +1174,7 @@ export type Database = {
           name?: string
           price?: number
           product_id?: string | null
+          related_book_ids?: string[] | null
           required_level?: number | null
           sale_price?: number | null
           seller?: string
@@ -1190,6 +1420,13 @@ export type Database = {
             foreignKeyName: "user_chapter_progress_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_chapter_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -1198,6 +1435,61 @@ export type Database = {
             columns: ["chapter_id"]
             isOneToOne: false
             referencedRelation: "book_chapters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_epub_chapter_progress: {
+        Row: {
+          book_id: string
+          chapter_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          chapter_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          chapter_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_epub_chapter_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_epub_chapter_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_epub_chapter_progress_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "book_chapter_epubs"
             referencedColumns: ["id"]
           },
         ]
@@ -1379,6 +1671,13 @@ export type Database = {
             foreignKeyName: "user_story_choices_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_story_choices_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -1430,7 +1729,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      book_translation_status: {
+        Row: {
+          author: string | null
+          id: string | null
+          title: string | null
+          total_chapters: number | null
+          translated_chapter_count: number | null
+          translation_status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_exponential_level: {
@@ -1442,10 +1751,7 @@ export type Database = {
           next_level_xp: number
         }[]
       }
-      calculate_level: {
-        Args: { experience_points: number }
-        Returns: number
-      }
+      calculate_level: { Args: { experience_points: number }; Returns: number }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -1455,10 +1761,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_orphaned_storage_files: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_orphaned_storage_files: { Args: never; Returns: undefined }
       create_instant_order: {
         Args: { p_item_id: string; p_item_name: string; p_price: number }
         Returns: string
@@ -1496,14 +1799,8 @@ export type Database = {
         Args: { details?: Json; event_type: string; user_id?: string }
         Returns: undefined
       }
-      reset_revenue_and_orders: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      revoke_manual_premium: {
-        Args: { p_user_id: string }
-        Returns: undefined
-      }
+      reset_revenue_and_orders: { Args: never; Returns: undefined }
+      revoke_manual_premium: { Args: { p_user_id: string }; Returns: undefined }
       revoke_manual_premium_by_email_secure: {
         Args: { p_email: string }
         Returns: undefined
@@ -1518,10 +1815,7 @@ export type Database = {
           email: string
         }[]
       }
-      sync_user_level_info: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      sync_user_level_info: { Args: never; Returns: undefined }
       update_genre_preference: {
         Args: {
           p_genre: string

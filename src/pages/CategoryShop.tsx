@@ -12,6 +12,7 @@ import { ArrowLeft, ShoppingCart, Search, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductModal from '@/components/ProductModal';
 import BundleNotificationDialog from '@/components/BundleNotificationDialog';
+import RecommendationsDialog from '@/components/RecommendationsDialog';
 
 interface ShopItem {
   id: string;
@@ -38,7 +39,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 export default function CategoryShop() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
-  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
+  const { addToCart, getBundlesForProduct, addBundleToCart, getRecommendations } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -53,6 +54,8 @@ export default function CategoryShop() {
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [selectedBundles, setSelectedBundles] = useState<any[]>([]);
   const [lastAddedProduct, setLastAddedProduct] = useState<ShopItem | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   useEffect(() => {
     fetchItems();
@@ -122,7 +125,7 @@ export default function CategoryShop() {
     setFilteredItems(filtered);
   };
 
-  const handleAddToCart = (item: ShopItem) => {
+  const handleAddToCart = async (item: ShopItem) => {
     const cartItem = {
       id: item.id,
       name: item.name,
@@ -160,6 +163,15 @@ export default function CategoryShop() {
       setSelectedBundles(productBundles);
       setLastAddedProduct(item);
       setBundleDialogOpen(true);
+      return;
+    }
+
+    // Charger les recommandations
+    const recs = await getRecommendations(item.id);
+    if (recs.length > 0) {
+      setRecommendations(recs);
+      setLastAddedProduct(item);
+      setShowRecommendations(true);
     }
   };
 
@@ -170,6 +182,15 @@ export default function CategoryShop() {
       description: "Tous les articles du lot sont maintenant dans votre panier",
     });
     setBundleDialogOpen(false);
+
+    // Charger les recommandations après le bundle
+    if (lastAddedProduct) {
+      const recs = await getRecommendations(lastAddedProduct.id);
+      if (recs.length > 0) {
+        setRecommendations(recs);
+        setShowRecommendations(true);
+      }
+    }
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -356,6 +377,17 @@ export default function CategoryShop() {
         bundles={selectedBundles}
         currentProductName={lastAddedProduct?.name || ""}
         onAddBundle={handleAddBundleFromCategory}
+      />
+
+      <RecommendationsDialog
+        isOpen={showRecommendations}
+        onClose={() => setShowRecommendations(false)}
+        recommendations={recommendations}
+        currentProductName={lastAddedProduct?.name || ""}
+        currentProductTags={lastAddedProduct?.tags}
+        onAddToCart={(product) => {
+          addToCart(product);
+        }}
       />
     </div>
   );

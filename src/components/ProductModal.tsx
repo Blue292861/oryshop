@@ -7,6 +7,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useToast } from "@/hooks/use-toast";
 import BundleNotificationDialog from "@/components/BundleNotificationDialog";
+import RecommendationsDialog from "@/components/RecommendationsDialog";
 
 interface ShopItem {
   id: string;
@@ -32,20 +33,22 @@ interface ProductModalProps {
 }
 
 export default function ProductModal({ item, isOpen, onClose }: ProductModalProps) {
-  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
+  const { addToCart, getBundlesForProduct, addBundleToCart, getRecommendations } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBundleDialog, setShowBundleDialog] = useState(false);
   const [availableBundles, setAvailableBundles] = useState<any[]>([]);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
   if (!item) return null;
 
   // Create array of all images (cover + additional)
   const allImages = [item.image_url, ...(item.additional_images || [])];
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (item.is_clothing && (!selectedSize || !item.available_sizes?.includes(selectedSize))) {
       toast({
         title: "Taille requise",
@@ -66,6 +69,14 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
     if (productBundles.length > 0) {
       setAvailableBundles(productBundles);
       setShowBundleDialog(true);
+      return;
+    }
+
+    // Charger les recommandations
+    const recs = await getRecommendations(item.id);
+    if (recs.length > 0) {
+      setRecommendations(recs);
+      setShowRecommendations(true);
     } else {
       onClose();
     }
@@ -78,7 +89,15 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
       description: "Tous les articles du lot ont été ajoutés à votre panier",
     });
     setShowBundleDialog(false);
-    onClose();
+
+    // Charger les recommandations après le bundle
+    const recs = await getRecommendations(item.id);
+    if (recs.length > 0) {
+      setRecommendations(recs);
+      setShowRecommendations(true);
+    } else {
+      onClose();
+    }
   };
 
   const finalPrice = item.is_on_sale && item.sale_price ? item.sale_price : item.price;
@@ -248,6 +267,20 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
         bundles={availableBundles}
         currentProductName={item.name}
         onAddBundle={handleAddBundle}
+      />
+
+      <RecommendationsDialog
+        isOpen={showRecommendations}
+        onClose={() => {
+          setShowRecommendations(false);
+          onClose();
+        }}
+        recommendations={recommendations}
+        currentProductName={item.name}
+        currentProductTags={item.tags}
+        onAddToCart={(product) => {
+          addToCart(product);
+        }}
       />
     </Dialog>
   );

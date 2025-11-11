@@ -13,6 +13,7 @@ import { ShoppingCart, Search, Filter, Coins, LogIn, Heart } from 'lucide-react'
 import { Layout } from '@/components/Layout';
 import ProductModal from '@/components/ProductModal';
 import BundleNotificationDialog from '@/components/BundleNotificationDialog';
+import RecommendationsDialog from '@/components/RecommendationsDialog';
 import { Link } from 'react-router-dom';
 
 interface ShopItem {
@@ -51,7 +52,9 @@ export default function Shop() {
   const [bundleDialogOpen, setBundleDialogOpen] = useState(false);
   const [selectedBundles, setSelectedBundles] = useState<any[]>([]);
   const [lastAddedProduct, setLastAddedProduct] = useState<ShopItem | null>(null);
-  const { addToCart, getBundlesForProduct, addBundleToCart } = useCart();
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const { addToCart, getBundlesForProduct, addBundleToCart, getRecommendations } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -101,7 +104,7 @@ export default function Shop() {
     setFilteredItems(filtered);
   };
 
-  const handleAddToCart = (item: ShopItem) => {
+  const handleAddToCart = async (item: ShopItem) => {
     // Si c'est un vêtement, ouvrir le modal pour la sélection de taille
     if (item.is_clothing) {
       setSelectedItem(item);
@@ -135,6 +138,15 @@ export default function Shop() {
       setSelectedBundles(productBundles);
       setLastAddedProduct(item);
       setBundleDialogOpen(true);
+      return;
+    }
+
+    // Charger les recommandations
+    const recs = await getRecommendations(item.id);
+    if (recs.length > 0) {
+      setRecommendations(recs);
+      setLastAddedProduct(item);
+      setShowRecommendations(true);
     }
   };
 
@@ -145,6 +157,15 @@ export default function Shop() {
       description: "Tous les articles du lot sont maintenant dans votre panier",
     });
     setBundleDialogOpen(false);
+
+    // Charger les recommandations après le bundle
+    if (lastAddedProduct) {
+      const recs = await getRecommendations(lastAddedProduct.id);
+      if (recs.length > 0) {
+        setRecommendations(recs);
+        setShowRecommendations(true);
+      }
+    }
   };
 
   const handleItemClick = (item: ShopItem) => {
@@ -403,6 +424,17 @@ export default function Shop() {
           bundles={selectedBundles}
           currentProductName={lastAddedProduct?.name || ""}
           onAddBundle={handleAddBundleFromShop}
+        />
+
+        <RecommendationsDialog
+          isOpen={showRecommendations}
+          onClose={() => setShowRecommendations(false)}
+          recommendations={recommendations}
+          currentProductName={lastAddedProduct?.name || ""}
+          currentProductTags={lastAddedProduct?.tags}
+          onAddToCart={(product) => {
+            addToCart(product);
+          }}
         />
       </div>
     </Layout>

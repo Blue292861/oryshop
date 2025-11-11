@@ -17,6 +17,14 @@ interface AppliedDiscount {
   discount_percentage: number;
 }
 
+interface PromoCode {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  minimum_purchase_amount: number;
+}
+
 export interface CartItem {
   id: string;
   name: string;
@@ -34,6 +42,8 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
+  bundles: BundleDeal[];
+  appliedPromoCode: PromoCode | null;
   addToCart: (item: Omit<CartItem, 'quantity'>) => void;
   removeFromCart: (id: string, selectedSize?: string) => void;
   updateQuantity: (id: string, quantity: number, selectedSize?: string) => void;
@@ -44,6 +54,7 @@ interface CartContextType {
   getTotalItems: () => number;
   getAppliedDiscounts: () => AppliedDiscount[];
   getTotalDiscount: () => number;
+  getPromoDiscount: () => number;
   getSubtotal: () => number;
   getBundlesForProduct: (productId: string) => BundleDeal[];
   getIncompleteBundles: () => Array<{
@@ -52,7 +63,9 @@ interface CartContextType {
     hasAtLeastOne: boolean;
   }>;
   addBundleToCart: (bundleId: string) => Promise<void>;
-  bundles: BundleDeal[];
+  applyPromoCode: (code: string) => Promise<{ success: boolean; message: string }>;
+  removePromoCode: () => void;
+  getRecommendations: (productId: string, limit?: number) => Promise<CartItem[]>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -60,6 +73,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [bundles, setBundles] = useState<BundleDeal[]>([]);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -220,10 +234,25 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ).toFixed(2));
   };
 
+  const getPromoDiscount = () => {
+    if (!appliedPromoCode) return 0;
+    
+    const subtotal = getSubtotal();
+    const bundleDiscount = getTotalDiscount();
+    const subtotalAfterBundles = subtotal - bundleDiscount;
+    
+    if (appliedPromoCode.discount_type === 'percentage') {
+      return parseFloat((subtotalAfterBundles * (appliedPromoCode.discount_value / 100)).toFixed(2));
+    } else {
+      return Math.min(appliedPromoCode.discount_value, subtotalAfterBundles);
+    }
+  };
+
   const getTotalPrice = () => {
     const subtotal = getSubtotal();
-    const totalDiscount = getTotalDiscount();
-    return parseFloat((subtotal - totalDiscount).toFixed(2));
+    const bundleDiscount = getTotalDiscount();
+    const promoDiscount = getPromoDiscount();
+    return parseFloat((subtotal - bundleDiscount - promoDiscount).toFixed(2));
   };
 
   const getShippingCost = () => {
@@ -301,9 +330,163 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const applyPromoCode = async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return { success: false, message: "Vous devez être connecté pour utiliser un code promo" };
+      }
+
+      // Vérifier l'existence et la validité du code
+      const { data: promoCode, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', code.toUpperCase())
+        .single();
+
+      if (error || !promoCode) {
+        return { success: false, message: "Code promo invalide" };
+      }
+
+      // Vérifier si actif
+      if (!promoCode.is_active) {
+        return { success: false, message: "Ce code promo n'est plus actif" };
+      }
+
+      // Vérifier les dates
+      const now = new Date();
+      if (promoCode.start_date && new Date(promoCode.start_date) > now) {
+        return { success: false, message: "Ce code promo n'est pas encore valide" };
+      }
+      if (promoCode.expiration_date && new Date(promoCode.expiration_date) < now) {
+        return { success: false, message: "Ce code promo a expiré" };
+      }
+
+      // Vérifier le montant minimum
+      const currentTotal = getTotalPrice();
+      if (currentTotal < promoCode.minimum_purchase_amount) {
+        return { 
+          success: false, 
+          message: `Montant minimum requis: ${promoCode.minimum_purchase_amount.toFixed(2)}€` 
+        };
+      }
+
+      // Vérifier le nombre d'utilisations
+      if (promoCode.max_uses && promoCode.current_uses >= promoCode.max_uses) {
+        return { success: false, message: "Ce code promo a atteint sa limite d'utilisation" };
+      }
+
+      // Vérifier si l'utilisateur a déjà utilisé ce code (si single_use)
+      if (promoCode.is_single_use) {
+        const { data: redemptions } = await supabase
+          .from('promo_code_redemptions')
+          .select('id')
+          .eq('promo_code_id', promoCode.id)
+          .eq('user_id', user.id)
+          .limit(1);
+
+        if (redemptions && redemptions.length > 0) {
+          return { success: false, message: "Vous avez déjà utilisé ce code promo" };
+        }
+      }
+
+      // Appliquer le code
+      setAppliedPromoCode({
+        id: promoCode.id,
+        code: promoCode.code,
+        discount_type: promoCode.discount_type as 'percentage' | 'fixed',
+        discount_value: promoCode.discount_value,
+        minimum_purchase_amount: promoCode.minimum_purchase_amount
+      });
+
+      return { 
+        success: true, 
+        message: `Code promo appliqué ! ${promoCode.discount_type === 'percentage' ? `-${promoCode.discount_value}%` : `-${promoCode.discount_value}€`}` 
+      };
+    } catch (error: any) {
+      return { success: false, message: "Erreur lors de l'application du code promo" };
+    }
+  };
+
+  const removePromoCode = () => {
+    setAppliedPromoCode(null);
+  };
+
+  const getRecommendations = async (productId: string, limit = 4): Promise<CartItem[]> => {
+    try {
+      // Récupérer le produit ajouté
+      const { data: product } = await supabase
+        .from('shop_items')
+        .select('tags, related_book_ids')
+        .eq('id', productId)
+        .single();
+      
+      if (!product) return [];
+      
+      let recommendations: any[] = [];
+      
+      // Stratégie 1 : Produits des mêmes livres
+      if (product.related_book_ids?.length > 0) {
+        const { data: bookRelated } = await supabase
+          .from('shop_items')
+          .select('*')
+          .neq('id', productId)
+          .overlaps('related_book_ids', product.related_book_ids)
+          .limit(limit);
+        
+        recommendations = bookRelated || [];
+      }
+      
+      // Stratégie 2 : Compléter avec produits de tags similaires
+      if (recommendations.length < limit && product.tags?.length > 0) {
+        const { data: tagRelated } = await supabase
+          .from('shop_items')
+          .select('*')
+          .neq('id', productId)
+          .overlaps('tags', product.tags)
+          .limit(limit - recommendations.length);
+        
+        recommendations = [...recommendations, ...(tagRelated || [])];
+      }
+      
+      // Stratégie 3 : Produits aléatoires si pas assez de recommandations
+      if (recommendations.length < limit) {
+        const { data: random } = await supabase
+          .from('shop_items')
+          .select('*')
+          .neq('id', productId)
+          .limit(limit - recommendations.length);
+        
+        recommendations = [...recommendations, ...(random || [])];
+      }
+      
+      // Filtrer les produits déjà dans le panier
+      const cartProductIds = items.map(item => item.id);
+      recommendations = recommendations.filter(rec => !cartProductIds.includes(rec.id));
+      
+      return recommendations.slice(0, limit).map(rec => ({
+        id: rec.id,
+        name: rec.name,
+        description: rec.description,
+        price: rec.price,
+        image_url: rec.image_url,
+        seller: rec.seller,
+        is_on_sale: rec.is_on_sale,
+        sale_price: rec.sale_price,
+        tags: rec.tags,
+        quantity: 1
+      }));
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      return [];
+    }
+  };
+
   return (
     <CartContext.Provider value={{
       items,
+      bundles,
+      appliedPromoCode,
       addToCart,
       removeFromCart,
       updateQuantity,
@@ -314,11 +497,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       getTotalItems,
       getAppliedDiscounts,
       getTotalDiscount,
+      getPromoDiscount,
       getSubtotal,
       getBundlesForProduct,
       getIncompleteBundles,
       addBundleToCart,
-      bundles
+      applyPromoCode,
+      removePromoCode,
+      getRecommendations
     }}>
       {children}
     </CartContext.Provider>

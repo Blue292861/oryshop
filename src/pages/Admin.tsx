@@ -92,7 +92,8 @@ export default function Admin() {
     is_clothing: false,
     available_sizes: [] as string[],
     additional_images: [] as string[],
-    shop_type: "" as 'internal' | 'external' | ""
+    shop_type: "" as 'internal' | 'external' | "",
+    related_book_ids: [] as string[]
   });
 
   const [bundleFormData, setBundleFormData] = useState({
@@ -362,7 +363,8 @@ export default function Admin() {
         is_clothing: false,
         available_sizes: [],
         additional_images: [],
-        shop_type: ""
+        shop_type: "",
+        related_book_ids: []
       });
       setCoverImageFile(null);
       setAdditionalImageFiles([]);
@@ -398,7 +400,8 @@ export default function Admin() {
       is_clothing: item.is_clothing || false,
       available_sizes: item.available_sizes || [],
       additional_images: item.additional_images || [],
-      shop_type: item.shop_type || "external"
+      shop_type: item.shop_type || "external",
+      related_book_ids: (item as any).related_book_ids || []
     });
     setDialogOpen(true);
   };
@@ -423,7 +426,8 @@ export default function Admin() {
       is_clothing: false,
       available_sizes: [],
       additional_images: [],
-      shop_type: ""
+      shop_type: "",
+      related_book_ids: []
     });
     setCoverImageFile(null);
     setAdditionalImageFiles([]);

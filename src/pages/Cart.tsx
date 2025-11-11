@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard, LogIn, UserPlus, Gift } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Coins, CreditCard, LogIn, UserPlus, Gift, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
 import { Link } from "react-router-dom";
 import BundleSuggestionCard from "@/components/BundleSuggestionCard";
+import PromoCodeInput from "@/components/PromoCodeInput";
 
 export default function Cart() {
   const { 
@@ -23,6 +24,8 @@ export default function Cart() {
     getSubtotal,
     getAppliedDiscounts,
     getTotalDiscount,
+    getPromoDiscount,
+    appliedPromoCode,
     getIncompleteBundles,
     addBundleToCart
   } = useCart();
@@ -268,13 +271,26 @@ export default function Cart() {
                 <CardTitle>Récapitulatif de commande</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Promo Code Input */}
+                <Card className="bg-muted/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Code promo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PromoCodeInput />
+                  </CardContent>
+                </Card>
+
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Sous-total ({items.reduce((sum, item) => sum + item.quantity, 0)} articles)</span>
                     <span>{getSubtotal().toFixed(2)}€</span>
                   </div>
                   
-                  {/* Applied Discounts */}
+                  {/* Applied Bundle Discounts */}
                   {getAppliedDiscounts().map((discount, index) => (
                     <div key={index} className="flex justify-between text-green-600">
                       <span className="text-sm">
@@ -286,8 +302,19 @@ export default function Cart() {
                   
                   {getTotalDiscount() > 0 && (
                     <div className="flex justify-between font-medium text-green-600">
-                      <span>Total des remises:</span>
+                      <span>Total remises lots:</span>
                       <span>-{getTotalDiscount().toFixed(2)}€</span>
+                    </div>
+                  )}
+
+                  {/* Applied Promo Code Discount */}
+                  {appliedPromoCode && getPromoDiscount() > 0 && (
+                    <div className="flex justify-between text-green-600 font-medium">
+                      <span className="flex items-center gap-1">
+                        <Tag className="h-3 w-3" />
+                        Code promo ({appliedPromoCode.code})
+                      </span>
+                      <span>-{getPromoDiscount().toFixed(2)}€</span>
                     </div>
                   )}
                   
