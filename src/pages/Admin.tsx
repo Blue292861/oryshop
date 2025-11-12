@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,30 @@ interface AdminStats {
   recentOrders: number;
 }
 
+interface PromoCode {
+  id: string;
+  code: string;
+  discount_type: "percentage" | "fixed";
+  discount_value: number;
+  minimum_purchase_amount: number | null;
+  max_uses: number | null;
+  current_uses: number | null;
+  is_single_use: boolean | null;
+  start_date: string | null;
+  expiration_date: string | null;
+  description: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+  created_by: string | null;
+}
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+}
+
 export default function Admin() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<ShopItem[]>([]);
@@ -71,6 +95,26 @@ export default function Admin() {
   const [activeCategory, setActiveCategory] = useState("tous");
   const [selectedTagFilter, setSelectedTagFilter] = useState("");
   const [filteredBundles, setFilteredBundles] = useState<BundleDeal[]>([]);
+  
+  // Promo codes state
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [promoDialogOpen, setPromoDialogOpen] = useState(false);
+  const [editingPromoCode, setEditingPromoCode] = useState<PromoCode | null>(null);
+  const [promoFormData, setPromoFormData] = useState({
+    code: "",
+    discount_type: "percentage" as "percentage" | "fixed",
+    discount_value: "",
+    minimum_purchase_amount: "0",
+    max_uses: "",
+    is_single_use: false,
+    start_date: "",
+    expiration_date: "",
+    description: "",
+    is_active: true
+  });
+  
+  // Books state
+  const [books, setBooks] = useState<Book[]>([]);
   
   const navigate = useNavigate();
   const AVAILABLE_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
@@ -113,6 +157,8 @@ export default function Admin() {
     fetchItems();
     fetchStats();
     fetchBundles();
+    fetchPromoCodes();
+    fetchBooks();
   }, []);
 
   useEffect(() => {
@@ -163,6 +209,39 @@ export default function Admin() {
       setFilteredBundles(data || []);
     } catch (error: any) {
       console.error('Error fetching bundles:', error);
+    }
+  };
+
+  const fetchPromoCodes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setPromoCodes((data || []) as PromoCode[]);
+    } catch (error: any) {
+      console.error('Error fetching promo codes:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les codes promo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchBooks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('id, title, author')
+        .order('title');
+      
+      if (error) throw error;
+      setBooks(data || []);
+    } catch (error: any) {
+      console.error('Error fetching books:', error);
     }
   };
 
@@ -287,7 +366,8 @@ export default function Admin() {
         price: parseFloat(formData.price),
         sale_price: formData.is_on_sale && formData.sale_price ? parseFloat(formData.sale_price) : null,
         tags: formData.tags,
-        shop_type: formData.shop_type as 'internal' | 'external'
+        shop_type: formData.shop_type as 'internal' | 'external',
+        related_book_ids: formData.related_book_ids
       };
 
       if (editingItem) {
@@ -309,7 +389,8 @@ export default function Admin() {
             is_clothing: finalData.is_clothing,
             available_sizes: finalData.available_sizes,
             additional_images: finalData.additional_images,
-            shop_type: finalData.shop_type
+            shop_type: finalData.shop_type,
+            related_book_ids: finalData.related_book_ids
           })
           .eq('id', editingItem.id)
           .select()
@@ -451,6 +532,145 @@ export default function Admin() {
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
+  };
+
+  const generateRandomCode = () => {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const prefix = 'PROMO';
+    const length = 6;
+    let code = prefix + '-';
+    
+    for (let i = 0; i < length; i++) {
+      code += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    
+    setPromoFormData(prev => ({ ...prev, code }));
+  };
+
+  const resetPromoForm = () => {
+    setPromoFormData({
+      code: "",
+      discount_type: "percentage",
+      discount_value: "",
+      minimum_purchase_amount: "0",
+      max_uses: "",
+      is_single_use: false,
+      start_date: "",
+      expiration_date: "",
+      description: "",
+      is_active: true
+    });
+  };
+
+  const handlePromoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const finalData = {
+        code: promoFormData.code.toUpperCase(),
+        discount_type: promoFormData.discount_type,
+        discount_value: parseFloat(promoFormData.discount_value),
+        minimum_purchase_amount: promoFormData.minimum_purchase_amount 
+          ? parseFloat(promoFormData.minimum_purchase_amount) 
+          : 0,
+        max_uses: promoFormData.max_uses ? parseInt(promoFormData.max_uses) : null,
+        is_single_use: promoFormData.is_single_use,
+        start_date: promoFormData.start_date || null,
+        expiration_date: promoFormData.expiration_date || null,
+        description: promoFormData.description,
+        is_active: promoFormData.is_active,
+        created_by: user?.id
+      };
+      
+      if (editingPromoCode) {
+        const { error } = await supabase
+          .from('promo_codes')
+          .update(finalData)
+          .eq('id', editingPromoCode.id);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Code promo modifié",
+          description: `Le code ${finalData.code} a été mis à jour`,
+        });
+      } else {
+        const { error } = await supabase
+          .from('promo_codes')
+          .insert([finalData]);
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Code promo créé",
+          description: `Le code ${finalData.code} a été créé avec succès`,
+        });
+      }
+      
+      fetchPromoCodes();
+      resetPromoForm();
+      setPromoDialogOpen(false);
+      setEditingPromoCode(null);
+    } catch (error: any) {
+      console.error('Error saving promo code:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de sauvegarder le code promo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePromoCode = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce code promo ?")) return;
+    
+    try {
+      const { error } = await supabase
+        .from('promo_codes')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Code promo supprimé",
+        description: "Le code a été supprimé avec succès",
+      });
+      
+      fetchPromoCodes();
+    } catch (error: any) {
+      console.error('Error deleting promo code:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le code promo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const togglePromoCodeActive = async (id: string, currentState: boolean | null) => {
+    try {
+      const { error } = await supabase
+        .from('promo_codes')
+        .update({ is_active: !currentState })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      fetchPromoCodes();
+      toast({
+        title: currentState ? "Code désactivé" : "Code activé",
+      });
+    } catch (error: any) {
+      console.error('Error toggling promo code:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'état du code",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteItem = async (id: string) => {
@@ -660,6 +880,358 @@ export default function Admin() {
               <ShoppingCart className="h-4 w-4" />
               Gestion des commandes
             </Button>
+            
+            <Dialog open={promoDialogOpen} onOpenChange={setPromoDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2" onClick={() => {
+                  resetPromoForm();
+                  setEditingPromoCode(null);
+                }}>
+                  <Tag className="h-4 w-4" />
+                  Gestion des codes promo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Gestion des codes promo</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-6">
+                  {/* Stats Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-border bg-muted/30">
+                      <CardContent className="pt-6">
+                        <div className="text-sm text-muted-foreground">Codes actifs</div>
+                        <div className="text-2xl font-bold text-primary">
+                          {promoCodes.filter(c => c.is_active).length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-border bg-muted/30">
+                      <CardContent className="pt-6">
+                        <div className="text-sm text-muted-foreground">Utilisations totales</div>
+                        <div className="text-2xl font-bold text-primary">
+                          {promoCodes.reduce((sum, c) => sum + (c.current_uses || 0), 0)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="border-border bg-muted/30">
+                      <CardContent className="pt-6">
+                        <div className="text-sm text-muted-foreground">Codes expirés</div>
+                        <div className="text-2xl font-bold text-destructive">
+                          {promoCodes.filter(c => 
+                            c.expiration_date && new Date(c.expiration_date) < new Date()
+                          ).length}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Form for creating/editing promo codes */}
+                  <form onSubmit={handlePromoSubmit} className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                    <div className="space-y-2">
+                      <Label htmlFor="promo_code">Code promo *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="promo_code"
+                          value={promoFormData.code}
+                          onChange={(e) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            code: e.target.value.toUpperCase() 
+                          }))}
+                          placeholder="ex: SAVE20"
+                          required
+                          className="flex-1"
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline"
+                          onClick={generateRandomCode}
+                        >
+                          Générer
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="discount_type">Type de réduction *</Label>
+                        <select
+                          id="discount_type"
+                          value={promoFormData.discount_type}
+                          onChange={(e) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            discount_type: e.target.value as "percentage" | "fixed" 
+                          }))}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2"
+                          required
+                        >
+                          <option value="percentage">Pourcentage (%)</option>
+                          <option value="fixed">Montant fixe (€)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="discount_value">
+                          Valeur * {promoFormData.discount_type === 'percentage' ? '(%)' : '(€)'}
+                        </Label>
+                        <Input
+                          id="discount_value"
+                          type="number"
+                          min="0"
+                          step={promoFormData.discount_type === 'percentage' ? "1" : "0.01"}
+                          max={promoFormData.discount_type === 'percentage' ? "100" : undefined}
+                          value={promoFormData.discount_value}
+                          onChange={(e) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            discount_value: e.target.value 
+                          }))}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="minimum_purchase">Montant minimum d'achat (€)</Label>
+                      <Input
+                        id="minimum_purchase"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={promoFormData.minimum_purchase_amount}
+                        onChange={(e) => setPromoFormData(prev => ({ 
+                          ...prev, 
+                          minimum_purchase_amount: e.target.value 
+                        }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+
+                    <div className="space-y-4 p-4 border rounded-lg bg-background">
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="is_single_use"
+                          checked={promoFormData.is_single_use}
+                          onCheckedChange={(checked) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            is_single_use: checked,
+                            max_uses: checked ? "" : prev.max_uses
+                          }))}
+                        />
+                        <Label htmlFor="is_single_use">Usage unique par utilisateur</Label>
+                      </div>
+
+                      {!promoFormData.is_single_use && (
+                        <div className="space-y-2">
+                          <Label htmlFor="max_uses">Nombre max d'utilisations totales</Label>
+                          <Input
+                            id="max_uses"
+                            type="number"
+                            min="1"
+                            value={promoFormData.max_uses}
+                            onChange={(e) => setPromoFormData(prev => ({ 
+                              ...prev, 
+                              max_uses: e.target.value 
+                            }))}
+                            placeholder="Illimité"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="start_date">Date de début</Label>
+                        <Input
+                          id="start_date"
+                          type="datetime-local"
+                          value={promoFormData.start_date}
+                          onChange={(e) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            start_date: e.target.value 
+                          }))}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="expiration_date">Date d'expiration</Label>
+                        <Input
+                          id="expiration_date"
+                          type="datetime-local"
+                          value={promoFormData.expiration_date}
+                          onChange={(e) => setPromoFormData(prev => ({ 
+                            ...prev, 
+                            expiration_date: e.target.value 
+                          }))}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="promo_description">Description (interne)</Label>
+                      <Textarea
+                        id="promo_description"
+                        value={promoFormData.description}
+                        onChange={(e) => setPromoFormData(prev => ({ 
+                          ...prev, 
+                          description: e.target.value 
+                        }))}
+                        placeholder="Note interne..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_active"
+                        checked={promoFormData.is_active}
+                        onCheckedChange={(checked) => setPromoFormData(prev => ({ 
+                          ...prev, 
+                          is_active: checked 
+                        }))}
+                      />
+                      <Label htmlFor="is_active">Code actif</Label>
+                    </div>
+
+                    <Button type="submit" className="w-full">
+                      {editingPromoCode ? "Mettre à jour" : "Créer le code promo"}
+                    </Button>
+                  </form>
+
+                  {/* List of existing promo codes */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">Codes promo existants</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-4 font-medium">Code</th>
+                            <th className="text-left p-4 font-medium">Type</th>
+                            <th className="text-left p-4 font-medium">Valeur</th>
+                            <th className="text-left p-4 font-medium">Usages</th>
+                            <th className="text-left p-4 font-medium">Statut</th>
+                            <th className="text-left p-4 font-medium">Expiration</th>
+                            <th className="text-left p-4 font-medium">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {promoCodes.map((promo) => {
+                            const isExpired = promo.expiration_date && new Date(promo.expiration_date) < new Date();
+                            const isMaxedOut = promo.max_uses && (promo.current_uses || 0) >= promo.max_uses;
+                            
+                            return (
+                              <tr key={promo.id} className="border-b hover:bg-muted/50">
+                                <td className="p-4 font-mono font-semibold">
+                                  {promo.code}
+                                  {promo.description && (
+                                    <p className="text-xs text-muted-foreground mt-1">{promo.description}</p>
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  <Badge variant="outline">
+                                    {promo.discount_type === 'percentage' ? '%' : '€'}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 font-semibold">
+                                  {promo.discount_type === 'percentage' 
+                                    ? `${promo.discount_value}%` 
+                                    : `${promo.discount_value}€`
+                                  }
+                                  {(promo.minimum_purchase_amount || 0) > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Min: {promo.minimum_purchase_amount}€
+                                    </p>
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  <span className={isMaxedOut ? "text-destructive font-semibold" : ""}>
+                                    {promo.current_uses || 0}
+                                    {promo.max_uses && ` / ${promo.max_uses}`}
+                                    {!promo.max_uses && promo.is_single_use && " (unique)"}
+                                    {!promo.max_uses && !promo.is_single_use && " / ∞"}
+                                  </span>
+                                </td>
+                                <td className="p-4">
+                                  <Badge 
+                                    variant={
+                                      !promo.is_active ? "secondary" : 
+                                      isExpired ? "destructive" : 
+                                      isMaxedOut ? "outline" : 
+                                      "default"
+                                    }
+                                  >
+                                    {!promo.is_active ? "Inactif" :
+                                     isExpired ? "Expiré" :
+                                     isMaxedOut ? "Épuisé" :
+                                     "Actif"}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-sm">
+                                  {promo.expiration_date ? (
+                                    <span className={isExpired ? "text-destructive" : ""}>
+                                      {new Date(promo.expiration_date).toLocaleDateString('fr-FR')}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => togglePromoCodeActive(promo.id, promo.is_active)}
+                                    >
+                                      {promo.is_active ? "Désactiver" : "Activer"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingPromoCode(promo);
+                                        setPromoFormData({
+                                          code: promo.code,
+                                          discount_type: promo.discount_type,
+                                          discount_value: promo.discount_value.toString(),
+                                          minimum_purchase_amount: (promo.minimum_purchase_amount || 0).toString(),
+                                          max_uses: promo.max_uses?.toString() || "",
+                                          is_single_use: promo.is_single_use || false,
+                                          start_date: promo.start_date || "",
+                                          expiration_date: promo.expiration_date || "",
+                                          description: promo.description || "",
+                                          is_active: promo.is_active || true
+                                        });
+                                      }}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleDeletePromoCode(promo.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+
+                      {promoCodes.length === 0 && (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                          <p>Aucun code promo créé</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <Dialog open={bundleDialogOpen} onOpenChange={setBundleDialogOpen}>
               <DialogTrigger asChild>
@@ -1123,6 +1695,79 @@ export default function Admin() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Related Books Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="related_books">
+                    Livres associés (pour recommandations)
+                  </Label>
+                  <div className="border rounded-lg p-4 bg-muted/20 max-h-64 overflow-y-auto">
+                    <div className="space-y-2">
+                      {books.map((book) => (
+                        <div key={book.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`book-${book.id}`}
+                            checked={formData.related_book_ids.includes(book.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  related_book_ids: [...prev.related_book_ids, book.id]
+                                }));
+                              } else {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  related_book_ids: prev.related_book_ids.filter(id => id !== book.id)
+                                }));
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <Label 
+                            htmlFor={`book-${book.id}`} 
+                            className="text-sm cursor-pointer flex-1"
+                          >
+                            <span className="font-medium">{book.title}</span>
+                            <span className="text-muted-foreground ml-2">— {book.author}</span>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {books.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aucun livre disponible
+                      </p>
+                    )}
+                  </div>
+                  
+                  {formData.related_book_ids.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {formData.related_book_ids.map((bookId) => {
+                        const book = books.find(b => b.id === bookId);
+                        return book ? (
+                          <Badge 
+                            key={bookId} 
+                            variant="secondary" 
+                            className="cursor-pointer"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              related_book_ids: prev.related_book_ids.filter(id => id !== bookId)
+                            }))}
+                          >
+                            {book.title} ×
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground">
+                    Sélectionnez les livres dont l'univers est lié à ce produit. 
+                    Les produits d'un même livre seront recommandés ensemble.
+                  </p>
                 </div>
 
                 {/* Sale Section */}

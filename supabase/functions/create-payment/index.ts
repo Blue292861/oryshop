@@ -145,7 +145,7 @@ serve(async (req) => {
       throw new Error("Invalid JSON in request body");
     }
 
-    const { items } = requestBody;
+    const { items, appliedPromoCode } = requestBody;
 
     // Comprehensive input validation
     if (!validateCartItems(items)) {
@@ -210,6 +210,8 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/cart`,
       metadata: {
         user_id: user.id,
+        promo_code: appliedPromoCode?.code || null,
+        promo_discount: appliedPromoCode?.discount || 0,
         items: JSON.stringify(items.map((item: any) => ({
           id: item.id,
           name: item.name,
@@ -275,6 +277,71 @@ serve(async (req) => {
     console.log(`Created ${orderResults.length} pending order entries for session ${session.id}`);
 
     console.log(`Created Stripe session ${session.id} for user ${user.id}`);
+    
+    // If a promo code was used, record its usage
+    if (appliedPromoCode?.code) {
+      console.log(`Recording promo code usage: ${appliedPromoCode.code}`);
+      
+      try {
+        // Get promo code details
+        const { data: promoCode, error: promoError } = await supabaseService
+          .from('promo_codes')
+          .select('*')
+          .eq('code', appliedPromoCode.code)
+          .single();
+        
+        if (promoError || !promoCode) {
+          console.error('Promo code not found:', promoError);
+          await logSecurityEvent(supabaseService, user.id, 'promo_code_not_found', {
+            code: appliedPromoCode.code,
+            error: promoError?.message
+          }, 'warn');
+        } else {
+          // Increment usage count
+          const { error: updateError } = await supabaseService
+            .from('promo_codes')
+            .update({ 
+              current_uses: (promoCode.current_uses || 0) + 1 
+            })
+            .eq('id', promoCode.id);
+          
+          if (updateError) {
+            console.error('Failed to increment promo code usage:', updateError);
+            await logSecurityEvent(supabaseService, user.id, 'promo_code_update_failed', {
+              code: appliedPromoCode.code,
+              error: updateError.message
+            }, 'error');
+          }
+          
+          // Record redemption
+          const { error: redemptionError } = await supabaseService
+            .from('promo_code_redemptions')
+            .insert({
+              promo_code_id: promoCode.id,
+              user_id: user.id,
+              order_id: session.id,
+              discount_applied: appliedPromoCode.discount
+            });
+          
+          if (redemptionError) {
+            console.error('Failed to record promo code redemption:', redemptionError);
+            await logSecurityEvent(supabaseService, user.id, 'promo_redemption_insert_failed', {
+              code: appliedPromoCode.code,
+              error: redemptionError.message
+            }, 'error');
+          } else {
+            console.log(`Successfully recorded promo code usage: ${appliedPromoCode.code}`);
+            await logSecurityEvent(supabaseService, user.id, 'promo_code_used', {
+              code: appliedPromoCode.code,
+              discount_applied: appliedPromoCode.discount,
+              session_id: session.id
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Unexpected error recording promo code:', error);
+      }
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
