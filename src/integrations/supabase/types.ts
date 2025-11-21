@@ -507,6 +507,7 @@ export type Database = {
       chapter_translations: {
         Row: {
           chapter_id: string
+          content_hash: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -517,6 +518,7 @@ export type Database = {
         }
         Insert: {
           chapter_id: string
+          content_hash?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -527,6 +529,7 @@ export type Database = {
         }
         Update: {
           chapter_id?: string
+          content_hash?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -1131,6 +1134,7 @@ export type Database = {
           sale_price: number | null
           seller: string
           shop_type: Database["public"]["Enums"]["shop_type"]
+          slug: string
           tags: string[] | null
           updated_at: string
         }
@@ -1155,6 +1159,7 @@ export type Database = {
           sale_price?: number | null
           seller: string
           shop_type?: Database["public"]["Enums"]["shop_type"]
+          slug: string
           tags?: string[] | null
           updated_at?: string
         }
@@ -1179,6 +1184,7 @@ export type Database = {
           sale_price?: number | null
           seller?: string
           shop_type?: Database["public"]["Enums"]["shop_type"]
+          slug?: string
           tags?: string[] | null
           updated_at?: string
         }
@@ -1299,6 +1305,201 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      translation_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          severity: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      translation_budget: {
+        Row: {
+          alert_threshold_pct: number
+          budget_usd: number
+          created_at: string
+          id: string
+          is_active: boolean
+          month_year: string
+          spent_usd: number
+          updated_at: string
+        }
+        Insert: {
+          alert_threshold_pct?: number
+          budget_usd?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          month_year: string
+          spent_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_threshold_pct?: number
+          budget_usd?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          month_year?: string
+          spent_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      translation_jobs: {
+        Row: {
+          book_id: string
+          completed_at: string | null
+          completed_chapters: number | null
+          created_at: string
+          error_message: string | null
+          failed_chapters: number | null
+          id: string
+          metadata: Json | null
+          started_at: string | null
+          status: string
+          target_languages: string[]
+          total_chapters: number
+          updated_at: string
+        }
+        Insert: {
+          book_id: string
+          completed_at?: string | null
+          completed_chapters?: number | null
+          created_at?: string
+          error_message?: string | null
+          failed_chapters?: number | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          target_languages: string[]
+          total_chapters: number
+          updated_at?: string
+        }
+        Update: {
+          book_id?: string
+          completed_at?: string | null
+          completed_chapters?: number | null
+          created_at?: string
+          error_message?: string | null
+          failed_chapters?: number | null
+          id?: string
+          metadata?: Json | null
+          started_at?: string | null
+          status?: string
+          target_languages?: string[]
+          total_chapters?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_jobs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_translation_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_jobs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      translation_metrics: {
+        Row: {
+          chapter_id: string | null
+          cost_usd: number | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          job_id: string | null
+          language: string
+          metadata: Json | null
+          retries: number | null
+          status: string
+          tokens_used: number | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          language: string
+          metadata?: Json | null
+          retries?: number | null
+          status: string
+          tokens_used?: number | null
+        }
+        Update: {
+          chapter_id?: string | null
+          cost_usd?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          language?: string
+          metadata?: Json | null
+          retries?: number | null
+          status?: string
+          tokens_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_metrics_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "book_chapter_epubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "translation_metrics_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "translation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ui_themes: {
         Row: {
@@ -1752,6 +1953,7 @@ export type Database = {
         }[]
       }
       calculate_level: { Args: { experience_points: number }; Returns: number }
+      check_and_create_budget_alert: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -1774,6 +1976,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      get_current_month_budget: {
+        Args: never
+        Returns: {
+          alert_threshold_pct: number
+          budget_usd: number
+          id: string
+          is_over_threshold: boolean
+          month_year: string
+          remaining_usd: number
+          spent_usd: number
+        }[]
       }
       get_recommended_theme: {
         Args: { p_user_id: string }
@@ -1823,6 +2037,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      update_translation_budget_spent: {
+        Args: { cost_amount: number }
+        Returns: boolean
       }
       user_has_role: {
         Args: {

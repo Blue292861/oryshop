@@ -15,6 +15,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Shop = lazy(() => import("./pages/Shop"));
+const Product = lazy(() => import("./pages/Product"));
 const Cart = lazy(() => import("./pages/Cart"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -55,6 +56,7 @@ const App = () => {
                   <Route path="/email-confirmation" element={<EmailConfirmation />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/shop/category/:category" element={<CategoryShop />} />
+                  <Route path="/product/:slug" element={<Product />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route 
                     path="/profile" 

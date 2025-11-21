@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Layout } from "@/components/Layout";
+import { slugify, isSlugAvailable, generateUniqueSlug } from "@/lib/slugify";
 
 interface ShopItem {
   id: string;
@@ -137,7 +138,8 @@ export default function Admin() {
     available_sizes: [] as string[],
     additional_images: [] as string[],
     shop_type: "" as 'internal' | 'external' | "",
-    related_book_ids: [] as string[]
+    related_book_ids: [] as string[],
+    slug: ""
   });
 
   const [bundleFormData, setBundleFormData] = useState({
@@ -338,6 +340,27 @@ export default function Admin() {
     }
     
     try {
+      // Check slug uniqueness (except for editing item)
+      const slugIsAvailable = await isSlugAvailable(
+        formData.slug,
+        editingItem?.id
+      );
+      
+      if (!slugIsAvailable) {
+        toast({
+          title: "Erreur",
+          description: "Ce slug existe déjà. Veuillez en choisir un autre.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Generate slug if empty
+      let finalSlug = formData.slug;
+      if (!finalSlug && !editingItem) {
+        finalSlug = generateUniqueSlug(formData.name, Date.now().toString());
+      }
+      
       setUploadingImages(true);
       let finalImageUrl = formData.image_url;
       let finalAdditionalImages = formData.additional_images;
@@ -367,7 +390,8 @@ export default function Admin() {
         sale_price: formData.is_on_sale && formData.sale_price ? parseFloat(formData.sale_price) : null,
         tags: formData.tags,
         shop_type: formData.shop_type as 'internal' | 'external',
-        related_book_ids: formData.related_book_ids
+        related_book_ids: formData.related_book_ids,
+        slug: finalSlug || formData.slug
       };
 
       if (editingItem) {
@@ -390,7 +414,8 @@ export default function Admin() {
             available_sizes: finalData.available_sizes,
             additional_images: finalData.additional_images,
             shop_type: finalData.shop_type,
-            related_book_ids: finalData.related_book_ids
+            related_book_ids: finalData.related_book_ids,
+            slug: finalData.slug
           })
           .eq('id', editingItem.id)
           .select()
@@ -445,7 +470,8 @@ export default function Admin() {
         available_sizes: [],
         additional_images: [],
         shop_type: "",
-        related_book_ids: []
+        related_book_ids: [],
+        slug: ""
       });
       setCoverImageFile(null);
       setAdditionalImageFiles([]);
@@ -482,7 +508,8 @@ export default function Admin() {
       available_sizes: item.available_sizes || [],
       additional_images: item.additional_images || [],
       shop_type: item.shop_type || "external",
-      related_book_ids: (item as any).related_book_ids || []
+      related_book_ids: (item as any).related_book_ids || [],
+      slug: (item as any).slug || ""
     });
     setDialogOpen(true);
   };
@@ -508,7 +535,8 @@ export default function Admin() {
       available_sizes: [],
       additional_images: [],
       shop_type: "",
-      related_book_ids: []
+      related_book_ids: [],
+      slug: ""
     });
     setCoverImageFile(null);
     setAdditionalImageFiles([]);
@@ -1695,6 +1723,44 @@ export default function Admin() {
                       ))}
                     </div>
                   )}
+                </div>
+
+                {/* Slug Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="slug">
+                    URL du produit (slug) *
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="slug"
+                      value={formData.slug}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        slug: slugify(e.target.value)
+                      }))}
+                      placeholder="t-shirt-orydia-noir"
+                      required
+                      pattern="[a-z0-9-]+"
+                      className="flex-1 font-mono text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const newSlug = slugify(formData.name);
+                        setFormData(prev => ({ ...prev, slug: newSlug }));
+                      }}
+                      disabled={!formData.name}
+                    >
+                      Générer
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    URL : {window.location.origin}/product/{formData.slug || 'slug-du-produit'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Lettres minuscules, chiffres et tirets uniquement
+                  </p>
                 </div>
 
                 {/* Related Books Section */}
