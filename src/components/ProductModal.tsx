@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { ShoppingCart, Star, Coins, X, Heart } from "lucide-react";
+import { ShoppingCart, Star, Coins, X, Heart, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/contexts/CartContext";
 import { useFavorites } from "@/contexts/FavoritesContext";
 import { useToast } from "@/hooks/use-toast";
+import { ShareButton } from "@/components/ShareButton";
+import { useNavigate } from "react-router-dom";
 import BundleNotificationDialog from "@/components/BundleNotificationDialog";
 import RecommendationsDialog from "@/components/RecommendationsDialog";
 
@@ -24,6 +26,7 @@ interface ShopItem {
   is_clothing?: boolean;
   available_sizes?: string[];
   additional_images?: string[];
+  slug?: string;
 }
 
 interface ProductModalProps {
@@ -36,6 +39,7 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
   const { addToCart, getBundlesForProduct, addBundleToCart, getRecommendations } = useCart();
   const { isFavorite, addToFavorites, removeFromFavorites } = useFavorites();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBundleDialog, setShowBundleDialog] = useState(false);
@@ -106,7 +110,28 @@ export default function ProductModal({ item, isOpen, onClose }: ProductModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{item.name}</DialogTitle>
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-2xl flex-1">{item.name}</DialogTitle>
+            <div className="flex gap-2">
+              {item.slug && (
+                <>
+                  <ShareButton 
+                    url={`${window.location.origin}/product/${item.slug}`}
+                    title={item.name}
+                    description={item.description}
+                    size="sm"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/product/${item.slug}`)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </DialogHeader>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
