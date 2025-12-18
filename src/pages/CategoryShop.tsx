@@ -71,7 +71,8 @@ export default function CategoryShop() {
       const { data, error } = await supabase
         .from('shop_items')
         .select('*')
-        .not('shop_type', 'eq', 'internal');
+        .not('shop_type', 'eq', 'internal')
+        .eq('is_available', true);
 
       if (error) throw error;
 

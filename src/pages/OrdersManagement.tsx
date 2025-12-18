@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { Package, Check, X, AlertTriangle, RefreshCw, Eye, Trash2, ShoppingBag } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Package, Check, X, AlertTriangle, RefreshCw, Eye, Trash2, ShoppingBag, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ interface Order {
   status: string;
   created_at: string;
   item_id: string;
+  order_number: string;
 }
 
 interface UserProfile {
@@ -34,6 +36,7 @@ interface OrderGroup {
   total: number;
   created_at: string;
   status: 'completed' | 'pending' | 'mixed';
+  orderNumber: string;
 }
 
 interface ShopItem {
@@ -57,6 +60,7 @@ export default function OrdersManagement() {
   const [isItemLoading, setIsItemLoading] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [itemPriceMap, setItemPriceMap] = useState<Map<string, number>>(new Map());
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,6 +142,7 @@ export default function OrdersManagement() {
         total,
         created_at: orders[0].created_at,
         status: allCompleted ? 'completed' : allPending ? 'pending' : 'mixed',
+        orderNumber: orders[0].order_number || groupId.substring(0, 8),
       };
     });
     
@@ -311,6 +316,18 @@ export default function OrdersManagement() {
   const pendingCount = orders.filter(order => order.status === 'pending').length;
   const completedCount = orders.filter(order => order.status === 'completed').length;
 
+  // Filter order groups based on search term
+  const filteredOrderGroups = useMemo(() => {
+    if (!searchTerm.trim()) return orderGroups;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return orderGroups.filter(group => 
+      group.orderNumber.toLowerCase().includes(searchLower) ||
+      group.userName.toLowerCase().includes(searchLower) ||
+      group.orders.some(order => order.item_name.toLowerCase().includes(searchLower))
+    );
+  }, [orderGroups, searchTerm]);
+
   if (loading) {
     return (
       <Layout>
@@ -397,19 +414,32 @@ export default function OrdersManagement() {
         {/* Liste des commandes groupées */}
         <Card>
           <CardHeader>
-            <CardTitle>Liste des Commandes</CardTitle>
-            <CardDescription>
-              Toutes les commandes groupées par client et date
-            </CardDescription>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle>Liste des Commandes</CardTitle>
+                <CardDescription>
+                  Toutes les commandes groupées par client et date
+                </CardDescription>
+              </div>
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher par n° commande, client, produit..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {orderGroups.length === 0 ? (
+            {filteredOrderGroups.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Aucune commande trouvée
+                {searchTerm ? `Aucune commande trouvée pour "${searchTerm}"` : "Aucune commande trouvée"}
               </div>
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-2">
-                {orderGroups.map((group) => (
+                {filteredOrderGroups.map((group) => (
                   <AccordionItem 
                     key={group.groupId} 
                     value={group.groupId}
@@ -426,7 +456,12 @@ export default function OrdersManagement() {
                         <div className="flex items-center gap-4">
                           <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                           <div className="text-left">
-                            <div className="font-semibold">{group.userName}</div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="font-mono text-xs">
+                                #{group.orderNumber}
+                              </Badge>
+                              <span className="font-semibold">{group.userName}</span>
+                            </div>
                             <div className="text-sm text-muted-foreground">
                               {format(new Date(group.created_at), 'dd/MM/yyyy à HH:mm')}
                             </div>

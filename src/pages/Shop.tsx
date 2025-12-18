@@ -73,6 +73,7 @@ export default function Shop() {
         .from('shop_items')
         .select('*')
         .not('shop_type', 'eq', 'internal')
+        .eq('is_available', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
