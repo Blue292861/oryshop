@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -139,7 +139,8 @@ export default function Admin() {
     additional_images: [] as string[],
     shop_type: "" as 'internal' | 'external' | "",
     related_book_ids: [] as string[],
-    slug: ""
+    slug: "",
+    is_available: true
   });
 
   const [bundleFormData, setBundleFormData] = useState({
@@ -391,7 +392,8 @@ export default function Admin() {
         tags: formData.tags,
         shop_type: formData.shop_type as 'internal' | 'external',
         related_book_ids: formData.related_book_ids,
-        slug: finalSlug || formData.slug
+        slug: finalSlug || formData.slug,
+        is_available: formData.is_available
       };
 
       if (editingItem) {
@@ -415,7 +417,8 @@ export default function Admin() {
             additional_images: finalData.additional_images,
             shop_type: finalData.shop_type,
             related_book_ids: finalData.related_book_ids,
-            slug: finalData.slug
+            slug: finalData.slug,
+            is_available: formData.is_available
           })
           .eq('id', editingItem.id)
           .select()
@@ -471,7 +474,8 @@ export default function Admin() {
         additional_images: [],
         shop_type: "",
         related_book_ids: [],
-        slug: ""
+        slug: "",
+        is_available: true
       });
       setCoverImageFile(null);
       setAdditionalImageFiles([]);
@@ -509,7 +513,8 @@ export default function Admin() {
       additional_images: item.additional_images || [],
       shop_type: item.shop_type || "external",
       related_book_ids: (item as any).related_book_ids || [],
-      slug: (item as any).slug || ""
+      slug: (item as any).slug || "",
+      is_available: (item as any).is_available !== false
     });
     setDialogOpen(true);
   };
@@ -536,7 +541,8 @@ export default function Admin() {
       additional_images: [],
       shop_type: "",
       related_book_ids: [],
-      slug: ""
+      slug: "",
+      is_available: true
     });
     setCoverImageFile(null);
     setAdditionalImageFiles([]);
@@ -1947,6 +1953,35 @@ export default function Admin() {
                       <span className="text-destructive font-semibold">Requis :</span> Oryshop = visible par tous • Orydia = boutique interne uniquement
                     </p>
                   </div>
+                </div>
+
+                {/* Availability Section */}
+                <div className="space-y-4 p-4 border border-border rounded-lg bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="is_available"
+                        checked={formData.is_available}
+                        onCheckedChange={(checked) => setFormData({ ...formData, is_available: checked })}
+                      />
+                      <Label htmlFor="is_available" className="flex items-center gap-2">
+                        {formData.is_available ? (
+                          <Eye className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        En vente dans la boutique
+                      </Label>
+                    </div>
+                    {!formData.is_available && (
+                      <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                        Masqué
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Désactivez pour masquer ce produit de la boutique sans le supprimer
+                  </p>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={uploadingImages}>
