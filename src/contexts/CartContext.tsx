@@ -25,6 +25,12 @@ interface PromoCode {
   minimum_purchase_amount: number;
 }
 
+export interface AppliedGiftCard {
+  id: string;
+  code: string;
+  current_balance: number;
+}
+
 export interface CartItem {
   id: string;
   name: string;
@@ -44,6 +50,7 @@ interface CartContextType {
   items: CartItem[];
   bundles: BundleDeal[];
   appliedPromoCode: PromoCode | null;
+  appliedGiftCard: AppliedGiftCard | null;
   addToCart: (item: Omit<CartItem, 'quantity'>) => void;
   removeFromCart: (id: string, selectedSize?: string) => void;
   updateQuantity: (id: string, quantity: number, selectedSize?: string) => void;
@@ -65,6 +72,11 @@ interface CartContextType {
   addBundleToCart: (bundleId: string) => Promise<void>;
   applyPromoCode: (code: string) => Promise<{ success: boolean; message: string }>;
   removePromoCode: () => void;
+  applyGiftCard: (code: string) => Promise<{ success: boolean; message: string }>;
+  removeGiftCard: () => void;
+  getGiftCardDiscount: () => number;
+  getGiftCardRemainingBalance: () => number;
+  getAmountToPay: () => number;
   getRecommendations: (productId: string, limit?: number) => Promise<CartItem[]>;
 }
 
@@ -74,6 +86,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [items, setItems] = useState<CartItem[]>([]);
   const [bundles, setBundles] = useState<BundleDeal[]>([]);
   const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
+  const [appliedGiftCard, setAppliedGiftCard] = useState<AppliedGiftCard | null>(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -410,6 +423,49 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const removePromoCode = () => {
     setAppliedPromoCode(null);
+  };
+
+  const applyGiftCard = async (code: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { data, error } = await supabase.rpc('validate_gift_card', { p_code: code.toUpperCase() });
+      
+      if (error) throw error;
+      
+      const result = data[0];
+      
+      if (!result.is_valid) {
+        return { success: false, message: result.message };
+      }
+      
+      setAppliedGiftCard({
+        id: result.gift_card_id,
+        code: code.toUpperCase(),
+        current_balance: result.current_balance,
+      });
+      
+      return { success: true, message: `Carte cadeau appliquée ! Solde: ${result.current_balance.toFixed(2)}€` };
+    } catch (error: any) {
+      return { success: false, message: "Erreur lors de la validation de la carte cadeau" };
+    }
+  };
+
+  const removeGiftCard = () => {
+    setAppliedGiftCard(null);
+  };
+
+  const getGiftCardDiscount = () => {
+    if (!appliedGiftCard) return 0;
+    const totalAfterDiscounts = getTotalWithShipping();
+    return Math.min(appliedGiftCard.current_balance, totalAfterDiscounts);
+  };
+
+  const getGiftCardRemainingBalance = () => {
+    if (!appliedGiftCard) return 0;
+    return Math.max(0, appliedGiftCard.current_balance - getTotalWithShipping());
+  };
+
+  const getAmountToPay = () => {
+    return Math.max(0, getTotalWithShipping() - getGiftCardDiscount());
   };
 
   const getRecommendations = async (productId: string, limit = 4): Promise<CartItem[]> => {

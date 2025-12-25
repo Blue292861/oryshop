@@ -23,6 +23,8 @@ const SalesExport = lazy(() => import("./pages/SalesExport"));
 const OrdersManagement = lazy(() => import("./pages/OrdersManagement"));
 const CategoryShop = lazy(() => import("./pages/CategoryShop"));
 const Favorites = lazy(() => import("./pages/Favorites"));
+const GiftCards = lazy(() => import("./pages/GiftCards"));
+const GiftCardSuccess = lazy(() => import("./pages/GiftCardSuccess"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -57,6 +59,8 @@ const App = () => {
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/shop/category/:category" element={<CategoryShop />} />
                   <Route path="/product/:slug" element={<Product />} />
+                  <Route path="/gift-cards" element={<GiftCards />} />
+                  <Route path="/gift-card-success" element={<GiftCardSuccess />} />
                   <Route path="/payment-success" element={<PaymentSuccess />} />
                   <Route 
                     path="/profile" 
