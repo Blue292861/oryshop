@@ -560,7 +560,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addBundleToCart,
       applyPromoCode,
       removePromoCode,
-      getRecommendations
+      getRecommendations,
+      appliedGiftCard,
+      applyGiftCard,
+      removeGiftCard,
+      getGiftCardDiscount,
+      getGiftCardRemainingBalance,
+      getAmountToPay
     }}>
       {children}
     </CartContext.Provider>
