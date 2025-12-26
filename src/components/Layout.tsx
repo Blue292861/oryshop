@@ -1,4 +1,4 @@
-import { Crown, ShoppingBag, User, Settings, LogOut, ShoppingCart } from "lucide-react";
+import { Crown, ShoppingBag, User, Settings, LogOut, ShoppingCart, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -65,6 +65,16 @@ export const Layout = ({ children }: LayoutProps) => {
             >
               <ShoppingCart className="h-4 w-4" />
               <span className="hidden sm:inline">Boutique</span>
+            </Button>
+
+            <Button
+              variant={isActivePage('/gift-cards') ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => navigate('/gift-cards')}
+              className="flex items-center gap-1 md:gap-2 px-2 md:px-3"
+            >
+              <Gift className="h-4 w-4" />
+              <span className="hidden sm:inline">Cartes Cadeaux</span>
             </Button>
 
             {user ? (

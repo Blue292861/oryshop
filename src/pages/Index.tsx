@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ShoppingCart, Clock, Star, Coins } from "lucide-react";
+import { ShoppingCart, Clock, Star, Coins, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -220,7 +220,7 @@ export default function Index() {
         )}
 
         {/* Features Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="text-center p-6">
             <ShoppingCart className="h-12 w-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">Boutique complète</h3>
@@ -244,6 +244,16 @@ export default function Index() {
               Tous nos produits sont sélectionnés avec soin pour leur qualité
             </p>
           </Card>
+
+          <Link to="/gift-cards" className="block">
+            <Card className="text-center p-6 h-full hover:shadow-lg transition-all duration-300 hover:border-primary cursor-pointer group">
+              <Gift className="h-12 w-12 text-primary mx-auto mb-4 group-hover:scale-110 transition-transform" />
+              <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors">Cartes Cadeaux</h3>
+              <p className="text-muted-foreground">
+                Offrez une carte cadeau à vos proches pour leur faire plaisir
+              </p>
+            </Card>
+          </Link>
         </div>
       </div>
     </Layout>
