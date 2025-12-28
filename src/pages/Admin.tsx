@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag, Eye, EyeOff, Gift, Send, CreditCard, Check, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag, Eye, EyeOff, Gift, Send, CreditCard, Check, Copy, BarChart3 } from "lucide-react";
+import { MarketingAnalytics } from "@/components/admin/MarketingAnalytics";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -2321,169 +2322,189 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Articles totaux</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalItems}</div>
-            </CardContent>
-          </Card>
+        {/* Main Tabs Navigation */}
+        <Tabs defaultValue="produits" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="produits" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Produits
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenus totaux</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalRevenue}€</div>
-            </CardContent>
-          </Card>
+          <TabsContent value="produits" className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="border-border bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Articles totaux</CardTitle>
+                  <Package className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">{stats.totalItems}</div>
+                </CardContent>
+              </Card>
 
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
+              <Card className="border-border bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Revenus totaux</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">{stats.totalRevenue}€</div>
+                </CardContent>
+              </Card>
 
-          <Card className="border-border bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Commandes (7j)</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">{stats.recentOrders}</div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card className="border-border bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">{stats.totalUsers}</div>
+                </CardContent>
+              </Card>
 
-        {/* Items List */}
-        <Card className="border-border bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle>Articles de la boutique</CardTitle>
-                <CardDescription>
-                  Gérez tous les articles disponibles dans Oryshop
-                </CardDescription>
-              </div>
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un article..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <Card className="border-border bg-card/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Commandes (7j)</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-primary">{stats.recentOrders}</div>
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {filteredItems.map((item) => (
-                <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-border rounded-lg bg-muted/20">
-                  <div className="flex items-center space-x-4 flex-1 min-w-0">
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <h4 className="font-semibold truncate">{item.name}</h4>
-                      <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
-                        {item.description}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <Badge variant="secondary">{item.category}</Badge>
-                        {item.is_on_sale && (
-                          <Badge variant="destructive" className="bg-red-600">Soldé</Badge>
-                        )}
-                        {item.is_temporary && (
-                          <Badge className="bg-orange-600 text-white">Temporaire</Badge>
-                        )}
-                        {item.tags && item.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {item.tags.slice(0, 2).map((tag, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {tag}
-                              </Badge>
-                            ))}
-                            {item.tags.length > 2 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{item.tags.length - 2}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                        <span className="text-sm text-muted-foreground">par {item.seller}</span>
-                      </div>
-                    </div>
+
+            {/* Items List */}
+            <Card className="border-border bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <CardTitle>Articles de la boutique</CardTitle>
+                    <CardDescription>
+                      Gérez tous les articles disponibles dans Oryshop
+                    </CardDescription>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
-                    <div className="text-right">
-                      {item.is_on_sale && item.sale_price ? (
-                        <div className="flex flex-col items-end">
-                          <span className="text-sm text-muted-foreground line-through">{item.price}€</span>
-                          <span className="text-lg font-bold text-red-600">{item.sale_price}€</span>
-                        </div>
-                      ) : (
-                        <span className="text-lg font-bold text-primary">{item.price}€</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(item.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Rechercher un article..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  {filteredItems.map((item) => (
+                    <div key={item.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-border rounded-lg bg-muted/20">
+                      <div className="flex items-center space-x-4 flex-1 min-w-0">
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-semibold truncate">{item.name}</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2 sm:line-clamp-1">
+                            {item.description}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <Badge variant="secondary">{item.category}</Badge>
+                            {item.is_on_sale && (
+                              <Badge variant="destructive" className="bg-red-600">Soldé</Badge>
+                            )}
+                            {item.is_temporary && (
+                              <Badge className="bg-orange-600 text-white">Temporaire</Badge>
+                            )}
+                            {item.tags && item.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {item.tags.slice(0, 2).map((tag, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {tag}
+                                  </Badge>
+                                ))}
+                                {item.tags.length > 2 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{item.tags.length - 2}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            <span className="text-sm text-muted-foreground">par {item.seller}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2">
+                        <div className="text-right">
+                          {item.is_on_sale && item.sale_price ? (
+                            <div className="flex flex-col items-end">
+                              <span className="text-sm text-muted-foreground line-through">{item.price}€</span>
+                              <span className="text-lg font-bold text-red-600">{item.sale_price}€</span>
+                            </div>
+                          ) : (
+                            <span className="text-lg font-bold text-primary">{item.price}€</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(item.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-            {filteredItems.length === 0 && items.length > 0 && (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aucun article trouvé</h3>
-                <p className="text-muted-foreground">
-                  Aucun article ne correspond à votre recherche "{searchTerm}"
-                </p>
-              </div>
-            )}
+                {filteredItems.length === 0 && items.length > 0 && (
+                  <div className="text-center py-12">
+                    <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Aucun article trouvé</h3>
+                    <p className="text-muted-foreground">
+                      Aucun article ne correspond à votre recherche "{searchTerm}"
+                    </p>
+                  </div>
+                )}
 
-            {items.length === 0 && (
-              <div className="text-center py-20">
-                <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Aucun article</h3>
-                <p className="text-muted-foreground mb-4">
-                  Commencez par créer votre premier article
-                </p>
-                <Button onClick={handleNewItem}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Créer un article
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                {items.length === 0 && (
+                  <div className="text-center py-20">
+                    <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Aucun article</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Commencez par créer votre premier article
+                    </p>
+                    <Button onClick={handleNewItem}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer un article
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <MarketingAnalytics />
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );
