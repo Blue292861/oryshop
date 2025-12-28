@@ -978,6 +978,7 @@ export type Database = {
           end_date: string
           id: string
           is_active: boolean | null
+          is_premium_only: boolean | null
           item_pool: Json | null
           max_orydors: number
           min_orydors: number
@@ -991,6 +992,7 @@ export type Database = {
           end_date: string
           id?: string
           is_active?: boolean | null
+          is_premium_only?: boolean | null
           item_pool?: Json | null
           max_orydors?: number
           min_orydors?: number
@@ -1004,6 +1006,7 @@ export type Database = {
           end_date?: string
           id?: string
           is_active?: boolean | null
+          is_premium_only?: boolean | null
           item_pool?: Json | null
           max_orydors?: number
           min_orydors?: number

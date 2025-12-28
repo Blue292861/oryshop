@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, Package, DollarSign, Users, TrendingUp, Search, FileSpreadsheet, Filter, ShoppingCart, Tag, Eye, EyeOff, Gift, Send, CreditCard, Check, Copy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,6 +116,17 @@ export default function Admin() {
   
   // Books state
   const [books, setBooks] = useState<Book[]>([]);
+  
+  // Gift card state
+  const [giftCardDialogOpen, setGiftCardDialogOpen] = useState(false);
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
+  const [giftCardSelectedAmount, setGiftCardSelectedAmount] = useState<number | null>(50);
+  const [giftCardCustomAmount, setGiftCardCustomAmount] = useState("");
+  const [giftCardRecipientName, setGiftCardRecipientName] = useState("");
+  const [giftCardRecipientEmail, setGiftCardRecipientEmail] = useState("");
+  const [giftCardPersonalMessage, setGiftCardPersonalMessage] = useState("");
+  const [createdGiftCard, setCreatedGiftCard] = useState<{code: string; amount: number; expiresAt: string; recipientName?: string; recipientEmail?: string} | null>(null);
+  const PRESET_AMOUNTS = [25, 50, 75, 100];
   
   const navigate = useNavigate();
   const AVAILABLE_CATEGORIES = ["livres", "produits dérivés", "packs", "accessoires", "vêtements"];
@@ -550,6 +561,71 @@ export default function Admin() {
     setEditingItem(null);
   };
 
+  // Gift card functions
+  const giftCardFinalAmount = giftCardSelectedAmount || (giftCardCustomAmount ? parseFloat(giftCardCustomAmount) : 0);
+
+  const resetGiftCardForm = () => {
+    setGiftCardSelectedAmount(50);
+    setGiftCardCustomAmount("");
+    setGiftCardRecipientName("");
+    setGiftCardRecipientEmail("");
+    setGiftCardPersonalMessage("");
+    setCreatedGiftCard(null);
+  };
+
+  const handleCreateGiftCard = async () => {
+    if (!giftCardFinalAmount || giftCardFinalAmount < 5 || giftCardFinalAmount > 500) {
+      toast({
+        title: "Montant invalide",
+        description: "Le montant doit être entre 5€ et 500€",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setGiftCardLoading(true);
+
+      const { data, error } = await supabase.functions.invoke('admin-create-gift-card', {
+        body: {
+          amount: giftCardFinalAmount,
+          recipientEmail: giftCardRecipientEmail || undefined,
+          recipientName: giftCardRecipientName || undefined,
+          personalMessage: giftCardPersonalMessage || undefined,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success && data?.giftCard) {
+        setCreatedGiftCard(data.giftCard);
+        toast({
+          title: "Carte cadeau créée !",
+          description: `Code: ${data.giftCard.code} - Montant: ${data.giftCard.amount}€`,
+        });
+      } else {
+        throw new Error(data?.error || "Erreur lors de la création");
+      }
+    } catch (error: any) {
+      console.error("Error creating gift card:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de créer la carte cadeau",
+        variant: "destructive",
+      });
+    } finally {
+      setGiftCardLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copié !",
+      description: "Le code a été copié dans le presse-papier",
+    });
+  };
+
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -914,6 +990,258 @@ export default function Admin() {
               <ShoppingCart className="h-4 w-4" />
               Gestion des commandes
             </Button>
+            
+            {/* Gift Card Dialog */}
+            <Dialog open={giftCardDialogOpen} onOpenChange={(open) => {
+              setGiftCardDialogOpen(open);
+              if (!open) resetGiftCardForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Gift className="h-4 w-4" />
+                  Cartes Cadeaux
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Gift className="h-5 w-5" />
+                    Générer une carte cadeau
+                  </DialogTitle>
+                </DialogHeader>
+                
+                {createdGiftCard ? (
+                  <div className="space-y-6">
+                    {/* Success state */}
+                    <div className="text-center space-y-4">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30">
+                        <Check className="h-8 w-8 text-green-600" />
+                      </div>
+                      <h3 className="text-xl font-bold">Carte cadeau créée avec succès !</h3>
+                    </div>
+                    
+                    {/* Gift card preview */}
+                    <div className="relative bg-gradient-to-br from-primary to-accent p-6 rounded-xl text-primary-foreground overflow-hidden">
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-4 right-4">
+                          <Gift className="h-24 w-24" />
+                        </div>
+                      </div>
+                      
+                      <div className="relative space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Gift className="h-6 w-6" />
+                          <span className="font-bold text-lg">CARTE CADEAU ORYSHOP</span>
+                        </div>
+                        
+                        <div className="text-4xl font-bold">
+                          {createdGiftCard.amount.toFixed(2)}€
+                        </div>
+                        
+                        <div className="flex items-center gap-2 bg-primary-foreground/20 p-3 rounded-lg">
+                          <span className="font-mono text-lg tracking-wider">{createdGiftCard.code}</span>
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => copyToClipboard(createdGiftCard.code)}
+                            className="ml-auto"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        
+                        {createdGiftCard.recipientName && (
+                          <div className="text-sm opacity-90">
+                            Pour: {createdGiftCard.recipientName}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs opacity-70 pt-2">
+                          Expire le: {new Date(createdGiftCard.expiresAt).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={resetGiftCardForm} 
+                        className="flex-1"
+                      >
+                        Créer une autre carte
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setGiftCardDialogOpen(false)}
+                      >
+                        Fermer
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Amount Selection */}
+                    <div className="space-y-6">
+                      <div>
+                        <Label className="text-base font-semibold flex items-center gap-2 mb-3">
+                          <CreditCard className="h-4 w-4" />
+                          Choisissez un montant
+                        </Label>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          {PRESET_AMOUNTS.map((amount) => (
+                            <Button
+                              key={amount}
+                              variant={giftCardSelectedAmount === amount ? "default" : "outline"}
+                              className="h-14 text-lg font-semibold"
+                              onClick={() => {
+                                setGiftCardSelectedAmount(amount);
+                                setGiftCardCustomAmount("");
+                              }}
+                            >
+                              {giftCardSelectedAmount === amount && <Check className="h-4 w-4 mr-2" />}
+                              {amount}€
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="admin-custom-amount">Ou montant personnalisé</Label>
+                        <div className="relative">
+                          <Input
+                            id="admin-custom-amount"
+                            type="number"
+                            min="5"
+                            max="500"
+                            placeholder="Montant (5€ - 500€)"
+                            value={giftCardCustomAmount}
+                            onChange={(e) => {
+                              setGiftCardCustomAmount(e.target.value);
+                              setGiftCardSelectedAmount(null);
+                            }}
+                            className="pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                            €
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Send className="h-4 w-4" />
+                          Pour qui ? (optionnel)
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-recipient-name">Nom du destinataire</Label>
+                          <Input
+                            id="admin-recipient-name"
+                            placeholder="Marie"
+                            value={giftCardRecipientName}
+                            onChange={(e) => setGiftCardRecipientName(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-recipient-email">Email du destinataire</Label>
+                          <Input
+                            id="admin-recipient-email"
+                            type="email"
+                            placeholder="marie@example.com"
+                            value={giftCardRecipientEmail}
+                            onChange={(e) => setGiftCardRecipientEmail(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="admin-message">Message personnalisé</Label>
+                          <Textarea
+                            id="admin-message"
+                            placeholder="Joyeux anniversaire ! 🎂"
+                            value={giftCardPersonalMessage}
+                            onChange={(e) => setGiftCardPersonalMessage(e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview & Send */}
+                    <div className="space-y-6">
+                      {/* Preview Card */}
+                      <Card className="bg-gradient-to-br from-primary/10 via-background to-accent/10 border-primary/20">
+                        <CardHeader>
+                          <CardTitle className="text-base">Aperçu de la carte</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="relative bg-gradient-to-br from-primary to-accent p-5 rounded-xl text-primary-foreground overflow-hidden">
+                            <div className="absolute inset-0 opacity-10">
+                              <div className="absolute top-4 right-4">
+                                <Gift className="h-20 w-20" />
+                              </div>
+                            </div>
+                            
+                            <div className="relative space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Gift className="h-5 w-5" />
+                                <span className="font-bold">CARTE CADEAU ORYSHOP</span>
+                              </div>
+                              
+                              <div className="text-3xl font-bold">
+                                {giftCardFinalAmount > 0 ? `${giftCardFinalAmount.toFixed(2)}€` : "0,00€"}
+                              </div>
+                              
+                              {giftCardRecipientName && (
+                                <div className="text-sm opacity-90">
+                                  Pour: {giftCardRecipientName}
+                                </div>
+                              )}
+                              
+                              {giftCardPersonalMessage && (
+                                <div className="text-sm italic opacity-80 border-l-2 border-primary-foreground/30 pl-3">
+                                  "{giftCardPersonalMessage}"
+                                </div>
+                              )}
+                              
+                              <div className="text-xs opacity-70 pt-2">
+                                Valable 1 an • Code unique
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Send Button */}
+                      <Card>
+                        <CardContent className="pt-6 space-y-4">
+                          <div className="flex justify-between items-center text-lg">
+                            <span>Montant</span>
+                            <span className="font-bold text-2xl text-primary">
+                              {giftCardFinalAmount > 0 ? `${giftCardFinalAmount.toFixed(2)}€` : "—"}
+                            </span>
+                          </div>
+
+                          <Button
+                            onClick={handleCreateGiftCard}
+                            disabled={giftCardLoading || giftCardFinalAmount < 5}
+                            className="w-full h-12 text-lg"
+                            size="lg"
+                          >
+                            <Send className="h-5 w-5 mr-2" />
+                            {giftCardLoading ? "Création..." : "Envoyer la carte cadeau"}
+                          </Button>
+                          
+                          <p className="text-xs text-center text-muted-foreground">
+                            La carte sera créée sans paiement (admin)
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
             
             <Dialog open={promoDialogOpen} onOpenChange={setPromoDialogOpen}>
               <DialogTrigger asChild>

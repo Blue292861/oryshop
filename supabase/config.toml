@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.gift-card-webhook]
 verify_jwt = false
+
+[functions.admin-create-gift-card]
+verify_jwt = true
